@@ -1,9 +1,23 @@
-# SelectTextHelper-高仿微信消息列表自由复制，双击查看文本内容
+# SelectTextHelper-高仿微信聊天消息列表自由复制文字，双击查看文本内容
 
-![MavenCentral](https://img.shields.io/badge/%20MavenCentral%20-1.0.0-5bc0de.svg)
+## [掘金地址](https://juejin.cn/post/7008080194116255752) [github地址](https://github.com/ITxiaoguang/SelectTextHelper)
 
 SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双击查看文本内容框架。 汇聚底层TextView框架、原理并加以整理得出的一个实用的Helper。
 仅用两个类实现便实现如此强大的功能，用法也超级简单。
+
+### 项目演示
+
+|消息页效果|查看内容效果|
+|:---:|:---:|
+|![1631677218586.gif](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e6e8d9451a7b4ebd8a1a8292d0c38ded~tplv-k3u1fbpfcp-watermark.image?)|![1631678150191.gif](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85c0156baffe4e558a9fa8316fe3260d~tplv-k3u1fbpfcp-watermark.image?)|
+
+|消息页全选|消息页自由复制放大镜|
+|:---:|:---:|
+|![demo_1.jpg](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/99068250b93644d4921c3afe4ef39dbc~tplv-k3u1fbpfcp-watermark.image?)|![demo_2.jpg](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c800612998d4415e95c23a201f99c669~tplv-k3u1fbpfcp-watermark.image?)|
+
+|消息页选中文本|查看内容|
+|:---:|:---:|
+|![demo_3.jpg](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b9567b55e9384dcebf394202a9ec849c~tplv-k3u1fbpfcp-watermark.image?)|![demo_4.jpg](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7cd289a09a2142d2a50232e717cbd179~tplv-k3u1fbpfcp-watermark.image?)|
 
 ## 特点功能:
 
@@ -24,23 +38,6 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 
 - [仿照的例子](https://www.dazhuanlan.com/t0915/topics/1440960)
 - [放大镜](https://developer.android.google.cn/guide/topics/text/magnifier)
-
-#### 项目演示
-
-|消息页全选|消息页自由复制|
-|:---:|:---:|
-|![](https://github.com/ITxiaoguang/SelectTextHelper/demo_1.jpg)|![](https://github.com/ITxiaoguang/SelectTextHelper/demo_2.jpg)|
-
-|消息页选中文本|
-|:---:|
-|![](https://github.com/ITxiaoguang/SelectTextHelper/demo_3.jpg)|
-
-上面这三个是消息页里传递消息逻辑通过EventBus实现，
-
-|查看内容|
-|:---:|
-|![](https://github.com/ITxiaoguang/SelectTextHelper/demo_4.jpg)|
-
 
 #### 主要实现
 
@@ -154,7 +151,7 @@ public void dismiss(){
         }
 ```
 
-高仿微信消息列表自由复制使用方法：
+高仿微信聊天消息列表自由复制使用方法：
 
 - recycleView + adapter + 多布局的使用在这里不阐述，请看demo。
 
