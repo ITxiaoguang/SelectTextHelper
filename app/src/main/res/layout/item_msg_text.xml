@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rl_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    android:background="@null"
+    tools:ignore="MissingDefaultResource">
+
+    <ImageView
+        android:id="@+id/iv_head_left"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentLeft="true"
+        android:background="@mipmap/ic_launcher" />
+
+    <ImageView
+        android:id="@+id/iv_head_right"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentRight="true"
+        android:background="@mipmap/ic_launcher" />
+
+    <FrameLayout
+        android:id="@+id/fl_body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="48dp"
+        android:background="@android:color/transparent">
+
+        <TextView
+            android:id="@+id/tv_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autoLink="web"
+            android:background="@drawable/shape_color_f2f3f5_radius_8"
+            android:gravity="center_vertical|start"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="3dip"
+            android:maxWidth="260dp"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="10dp"
+            android:textColor="#111111"
+            android:textColorLink="#0888ff"
+            android:textSize="16sp"
+            tools:text="www.baidu.com Android 11带来了全新的链接API，用以支持5G网络，可以充分利用 5G 提供的改进的速度和延迟，如在检测到高质量网络时，使APP自动提供高质量视频。" />
+    </FrameLayout>
+</RelativeLayout>

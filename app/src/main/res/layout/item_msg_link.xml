@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rl_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    android:background="@null"
+    tools:ignore="MissingDefaultResource">
+
+    <ImageView
+        android:id="@+id/iv_head_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:background="@mipmap/ic_launcher" />
+
+    <ImageView
+        android:id="@+id/iv_head_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:background="@mipmap/ic_launcher" />
+
+    <FrameLayout
+        android:id="@+id/fl_body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="48dp"
+        android:background="@android:color/transparent">
+
+        <TextView
+            android:id="@+id/tv_link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/iv_head_right"
+            android:layout_toRightOf="@id/iv_head_left"
+            android:background="@drawable/shape_color_f2f3f5_radius_8"
+            android:drawableLeft="@mipmap/ic_launcher"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="3dip"
+            android:maxWidth="260dp"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="10dp"
+            android:textColor="#111111"
+            android:textColorLink="#0888ff"
+            android:textSize="16sp"
+            tools:text="Android 11带来了全新的链接API" />
+    </FrameLayout>
+</RelativeLayout>

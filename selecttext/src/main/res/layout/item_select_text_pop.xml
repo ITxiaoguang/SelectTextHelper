@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/ll_pop_item"
+    android:layout_width="52dp"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="12dp"
+    android:background="@null"
+    android:orientation="vertical"
+    tools:background="#4c4c4c">
+
+    <ImageView
+        android:id="@+id/iv_pop_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/tv_pop_func"
+        android:layout_width="52dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="6dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        tools:text="置顶" />
+
+</LinearLayout>
