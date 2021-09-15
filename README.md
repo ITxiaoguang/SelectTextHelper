@@ -53,89 +53,89 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 
 ```java
 SelectTextHelper mSelectableTextHelper=new SelectTextHelper
-        .Builder(textView)// 放你的textView到这里！！
-        .setCursorHandleColor(0xFF1379D6/*mContext.getResources().getColor(R.color.colorAccent)*/)// 游标颜色 default 0xFF1379D6
-        .setCursorHandleSizeInDp(24)// 游标大小 单位dp default 24
-        .setSelectedColor(0xFFAFE1F4/*mContext.getResources().getColor(R.color.colorAccentTransparent)*/)// 选中文本的颜色 default 0xFFAFE1F4
-        .setSelectAll(true)// 初次选中是否全选 default true
-        .setScrollShow(true)// 滚动时是否继续显示 default true
-        .setSelectedAllNoPop(true)// 已经全选无弹窗，设置了true在监听会回调 onSelectAllShowCustomPop 方法 default false
-        .setMagnifierShow(true)// 放大镜 default true
-        .addItem(0/*item的图标*/,"复制"/*item的描述*/, // 操作弹窗的每个item
-        ()->Log.i("SelectTextHelper","复制")/*item的回调*/)
-        .build();
+    .Builder(textView)// 放你的textView到这里！！
+    .setCursorHandleColor(0xFF1379D6/*mContext.getResources().getColor(R.color.colorAccent)*/)// 游标颜色 default 0xFF1379D6
+    .setCursorHandleSizeInDp(24)// 游标大小 单位dp default 24
+    .setSelectedColor(0xFFAFE1F4/*mContext.getResources().getColor(R.color.colorAccentTransparent)*/)// 选中文本的颜色 default 0xFFAFE1F4
+    .setSelectAll(true)// 初次选中是否全选 default true
+    .setScrollShow(true)// 滚动时是否继续显示 default true
+    .setSelectedAllNoPop(true)// 已经全选无弹窗，设置了true在监听会回调 onSelectAllShowCustomPop 方法 default false
+    .setMagnifierShow(true)// 放大镜 default true
+    .addItem(0/*item的图标*/,"复制"/*item的描述*/, // 操作弹窗的每个item
+    ()->Log.i("SelectTextHelper","复制")/*item的回调*/)
+    .build();
 
-        mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener(){
-/**
- * 点击回调
- */
-@Override
-public void onClick(View v){
+    mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener(){
+    /**
+     * 点击回调
+     */
+    @Override
+    public void onClick(View v){
         // clickTextView(textView.getText().toString().trim());
-        }
+    }
 
-/**
- * 长按回调
- */
-@Override
-public void onLongClick(View v){
+    /**
+     * 长按回调
+     */
+    @Override
+    public void onLongClick(View v){
         // postShowCustomPop(SHOW_DELAY);
-        }
+    }
 
-/**
- * 选中文本回调
- */
-@Override
-public void onTextSelected(CharSequence content){
+    /**
+     * 选中文本回调
+     */
+    @Override
+    public void onTextSelected(CharSequence content){
         // selectedText = content.toString();
-        }
+    }
 
-/**
- * 弹窗关闭回调
- */
-@Override
-public void onDismiss(){
-        }
+    /**
+     * 弹窗关闭回调
+     */
+    @Override
+    public void onDismiss(){
+    }
 
-/**
- * 点击TextView里的url回调
- */
-@Override
-public void onClickUrl(String url){
-        }
+    /**
+     * 点击TextView里的url回调
+     */
+    @Override
+    public void onClickUrl(String url){
+    }
 
-/**
- * 全选显示自定义弹窗回调
- */
-@Override
-public void onSelectAllShowCustomPop(){
+    /**
+     * 全选显示自定义弹窗回调
+     */
+    @Override
+    public void onSelectAllShowCustomPop(){
         // postShowCustomPop(SHOW_DELAY);
-        }
+    }
 
-/**
- * 重置回调
- */
-@Override
-public void onReset(){
+    /**
+     * 重置回调
+     */
+    @Override
+    public void onReset(){
         // SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissOperatePop"));
-        }
+    }
 
-/**
- * 解除自定义弹窗回调
- */
-@Override
-public void onDismissCustomPop(){
+    /**
+     * 解除自定义弹窗回调
+     */
+    @Override
+    public void onDismissCustomPop(){
         // SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissOperatePop"));
-        }
+    }
 
-/**
- * 是否正在滚动回调
- */
-@Override
-public void onScrolling(){
+    /**
+     * 是否正在滚动回调
+     */
+    @Override
+    public void onScrolling(){
         // removeShowSelectView();
-        }
-        });
+    }
+});
 
 ```
 
@@ -146,9 +146,9 @@ public void onScrolling(){
 ```java
 @Override
 public void dismiss(){
-        mSelectableTextHelper.reset();
-        super.dismiss();
-        }
+    mSelectableTextHelper.reset();
+    super.dismiss();
+}
 ```
 
 高仿微信聊天消息列表自由复制使用方法：
@@ -168,22 +168,22 @@ public void dismiss(){
  */
 @Subscribe(threadMode = ThreadMode.MAIN)
 public void handleSelector(SelectTextEvent event){
-        if(null==mSelectableTextHelper){
+    if(null==mSelectableTextHelper){
         return;
-        }
-        String type=event.getType();
-        if(TextUtils.isEmpty(type)){
+    }
+    String type=event.getType();
+    if(TextUtils.isEmpty(type)){
         return;
-        }
-        switch(type){
+    }
+    switch(type){
         case"dismissAllPop":
-        mSelectableTextHelper.reset();
+            mSelectableTextHelper.reset();
         break;
         case"dismissAllPopDelayed":
-        postReset(RESET_DELAY);
+            postReset(RESET_DELAY);
         break;
-        }
-        }
+    }
+}
 ```
 
 - 重写adapter里的onViewRecycled方法，该方法在回收View时调用
@@ -191,12 +191,12 @@ public void handleSelector(SelectTextEvent event){
 ```java
 @Override
 public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder){
-        super.onViewRecycled(holder);
-        if(holder instanceof ViewHolderText){
+    super.onViewRecycled(holder);
+    if(holder instanceof ViewHolderText){
         // 注销
         SelectTextEventBus.getDefault().unregister(holder);
-        }
-        }
+    }
+}
 ```
 
 - 防抖
@@ -207,9 +207,9 @@ public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder){
  * 防抖
  */
 private void postShowCustomPop(int duration){
-        textView.removeCallbacks(mShowCustomPopRunnable);
-        textView.postDelayed(mShowCustomPopRunnable,duration);
-        }
+    textView.removeCallbacks(mShowCustomPopRunnable);
+    textView.postDelayed(mShowCustomPopRunnable,duration);
+}
 
 private final Runnable mShowCustomPopRunnable=
         ()->showCustomPop(text_rl_container,textMsgBean);
@@ -219,13 +219,13 @@ private final Runnable mShowCustomPopRunnable=
  * 为了支持滑动不重置
  */
 private void postReset(int duration){
-        textView.removeCallbacks(mShowSelectViewRunnable);
-        textView.postDelayed(mShowSelectViewRunnable,duration);
-        }
+    textView.removeCallbacks(mShowSelectViewRunnable);
+    textView.postDelayed(mShowSelectViewRunnable,duration);
+}
 
 private void removeShowSelectView(){
-        textView.removeCallbacks(mShowSelectViewRunnable);
-        }
+    textView.removeCallbacks(mShowSelectViewRunnable);
+}
 
 private final Runnable mShowSelectViewRunnable=
         ()->mSelectableTextHelper.reset();
@@ -236,5 +236,4 @@ private final Runnable mShowSelectViewRunnable=
 ```
 android.useAndroidX=true
 android.enableJetifier=true
-
 ```
