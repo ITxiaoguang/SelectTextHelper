@@ -178,8 +178,8 @@ public class MsgAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private void selectText(MsgBean msgBean) {
             textMsgBean = msgBean;
             mSelectableTextHelper = new SelectTextHelper
-                    .Builder(textView)// 游标演示
-                    .setCursorHandleColor(mContext.getResources().getColor(R.color.colorAccent))// 游标演示
+                    .Builder(textView)// 放你的textView到这里！！
+                    .setCursorHandleColor(mContext.getResources().getColor(R.color.colorAccent))// 游标颜色
                     .setCursorHandleSizeInDp(22)// 游标大小 单位dp
                     .setSelectedColor(mContext.getResources().getColor(R.color.colorAccentTransparent))// 选中文本的颜色
                     .setSelectAll(true)// 初次选中是否全选 default true
@@ -291,7 +291,7 @@ public class MsgAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         /**
          * 延迟显示CustomPop
-         * 为了短时间多次调用
+         * 防抖
          */
         private void postShowCustomPop(int duration) {
             textView.removeCallbacks(mShowCustomPopRunnable);

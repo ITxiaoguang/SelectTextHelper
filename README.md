@@ -55,93 +55,183 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 #### 2.给你的 TextView 创建Helper和加监听
 
 ```java
-SelectTextHelper mSelectableTextHelper = new SelectTextHelper
-    .Builder(textView)// 游标演示
-    .setCursorHandleColor(mContext.getResources().getColor(R.color.colorAccent))// 游标演示
-    .setCursorHandleSizeInDp(22)// 游标大小 单位dp
-    .setSelectedColor(mContext.getResources().getColor(R.color.colorAccentTransparent))// 选中文本的颜色
-    .setSelectAll(true)// 初次选中是否全选 default true
-    .setScrollShow(true)// 滚动时是否继续显示 default true
-    .setSelectedAllNoPop(true)// 已经全选无弹窗，设置了监听会回调 onSelectAllShowCustomPop 方法
-    .setMagnifierShow(true)// 放大镜 default true
-    .addItem(R.drawable.ic_msg_copy, R.string.copy, () -> copy(mSelectableTextHelper, selectedText))
-    .addItem(R.drawable.ic_msg_select_all, R.string.select_all, this::selectAll)
-    .addItem(R.drawable.ic_msg_forward, R.string.forward, this::forward)
-    .build();
+SelectTextHelper mSelectableTextHelper=new SelectTextHelper
+        .Builder(textView)// 放你的textView到这里！！
+        .setCursorHandleColor(0xFF1379D6/*mContext.getResources().getColor(R.color.colorAccent)*/)// 游标颜色 default 0xFF1379D6
+        .setCursorHandleSizeInDp(24)// 游标大小 单位dp default 24
+        .setSelectedColor(0xFFAFE1F4/*mContext.getResources().getColor(R.color.colorAccentTransparent)*/)// 选中文本的颜色 default 0xFFAFE1F4
+        .setSelectAll(true)// 初次选中是否全选 default true
+        .setScrollShow(true)// 滚动时是否继续显示 default true
+        .setSelectedAllNoPop(true)// 已经全选无弹窗，设置了true在监听会回调 onSelectAllShowCustomPop 方法 default false
+        .setMagnifierShow(true)// 放大镜 default true
+        .addItem(0/*item的图标*/,"复制"/*item的描述*/, // 操作弹窗的每个item
+        ()->Log.i("SelectTextHelper","复制")/*item的回调*/)
+        .build();
 
-mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener() {
+        mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener(){
 /**
  * 点击回调
  */
 @Override
-public void onClick(View v) {
-        clickTextView(textView.getText().toString().trim());
+public void onClick(View v){
+        // clickTextView(textView.getText().toString().trim());
         }
 
 /**
  * 长按回调
  */
 @Override
-public void onLongClick(View v) {
-        postShowCustomPop(SHOW_DELAY);
+public void onLongClick(View v){
+        // postShowCustomPop(SHOW_DELAY);
         }
 
 /**
  * 选中文本回调
  */
 @Override
-public void onTextSelected(CharSequence content) {
-        selectedText = content.toString();
+public void onTextSelected(CharSequence content){
+        // selectedText = content.toString();
         }
 
 /**
  * 弹窗关闭回调
  */
 @Override
-public void onDismiss() {
+public void onDismiss(){
         }
 
 /**
  * 点击TextView里的url回调
  */
 @Override
-public void onClickUrl(String url) {
-      
+public void onClickUrl(String url){
         }
 
 /**
  * 全选显示自定义弹窗回调
  */
 @Override
-public void onSelectAllShowCustomPop() {
-        postShowCustomPop(SHOW_DELAY);
+public void onSelectAllShowCustomPop(){
+        // postShowCustomPop(SHOW_DELAY);
         }
 
 /**
  * 重置回调
  */
 @Override
-public void onReset() {
-        SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissOperatePop"));
+public void onReset(){
+        // SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissOperatePop"));
         }
 
 /**
  * 解除自定义弹窗回调
  */
 @Override
-public void onDismissCustomPop() {
-        SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissOperatePop"));
+public void onDismissCustomPop(){
+        // SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissOperatePop"));
         }
 
 /**
  * 是否正在滚动回调
  */
 @Override
-public void onScrolling() {
-        removeShowSelectView();
+public void onScrolling(){
+        // removeShowSelectView();
         }
         });
 
+```
+
+#### 3.demo中提供了查看文本内容的SelectTextDialog 和 消息列表自由复制MainActivity,请自行参照。
+
+查看文本内容使用方法： 该方法比较简单，将textView参照步骤2放入SelectTextHelper中，在dismiss调用SelectTextHelper的reset()即可。
+
+```java
+@Override
+public void dismiss(){
+        mSelectableTextHelper.reset();
+        super.dismiss();
+        }
+```
+
+高仿微信消息列表自由复制使用方法：
+
+- recycleView + adapter + 多布局的使用在这里不阐述，请看demo。
+
+- 为adapter里text类型ViewHolder中的textView参照步骤2放入SelectTextHelper中，注册SelectTextEventBus。
+
+- SelectTextEventBus类特别说明、原理：
+  SelectTextEventBus在register时记录下类和方法，方便在Activity/Fragment Destroy时unregister所有EventBus
+
+- text类型ViewHolder 添加EventBus监听
+
+```java
+/**
+ * 自定义SelectTextEvent 隐藏 光标
+ */
+@Subscribe(threadMode = ThreadMode.MAIN)
+public void handleSelector(SelectTextEvent event){
+        if(null==mSelectableTextHelper){
+        return;
+        }
+        String type=event.getType();
+        if(TextUtils.isEmpty(type)){
+        return;
+        }
+        switch(type){
+        case"dismissAllPop":
+        mSelectableTextHelper.reset();
+        break;
+        case"dismissAllPopDelayed":
+        postReset(RESET_DELAY);
+        break;
+        }
+        }
+```
+
+- 重写adapter里的onViewRecycled方法，该方法在回收View时调用
+
+```java
+@Override
+public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder){
+        super.onViewRecycled(holder);
+        if(holder instanceof ViewHolderText){
+        // 注销
+        SelectTextEventBus.getDefault().unregister(holder);
+        }
+        }
+```
+
+- 防抖
+
+```java
+/**
+ * 延迟显示CustomPop
+ * 防抖
+ */
+private void postShowCustomPop(int duration){
+        textView.removeCallbacks(mShowCustomPopRunnable);
+        textView.postDelayed(mShowCustomPopRunnable,duration);
+        }
+
+private final Runnable mShowCustomPopRunnable=
+        ()->showCustomPop(text_rl_container,textMsgBean);
+
+/**
+ * 延迟重置
+ * 为了支持滑动不重置
+ */
+private void postReset(int duration){
+        textView.removeCallbacks(mShowSelectViewRunnable);
+        textView.postDelayed(mShowSelectViewRunnable,duration);
+        }
+
+private void removeShowSelectView(){
+        textView.removeCallbacks(mShowSelectViewRunnable);
+        }
+
+private final Runnable mShowSelectViewRunnable=
+        ()->mSelectableTextHelper.reset();
 ```
 
 如果使用 AndroidX 先在 gradle.properties 中添加，两行都不能少噢~
