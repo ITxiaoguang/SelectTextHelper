@@ -46,10 +46,11 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 	}
 ```
 
-#### 2.在Module目录下的build.gradle中添加依赖
+#### 2.在Module目录下的build.gradle中添加依赖 
+[![](https://jitpack.io/v/ITxiaoguang/SelectTextHelper.svg)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
 ``` gradle
 	dependencies {
-	        implementation 'com.github.ITxiaoguang:SelectTextHelper:1.0.0'
+	        implementation 'com.github.ITxiaoguang:SelectTextHelper:xxx'
 	}
 ```
 
