@@ -71,7 +71,7 @@ public class SelectTextHelper {
     private boolean mScrollShow; // 滑动依然显示弹窗
     private boolean mMagnifierShow; // 显示放大镜
     private int mPopSpanCount; // 弹窗每行个数
-    private int mPopBgColor; // 弹窗箭头
+    private int mPopBgResource; // 弹窗箭头
     private int mPopArrowImg; // 弹窗箭头
     private List<Pair<Integer, String>> itemTextList;// 操作弹窗item文本
     private List<Builder.onSeparateItemClickListener> itemListenerList = new LinkedList<>();// 操作弹窗item监听
@@ -119,7 +119,7 @@ public class SelectTextHelper {
         private boolean mScrollShow = true;
         private boolean mMagnifierShow = true;
         private int mPopSpanCount = 5;
-        private int mPopBgColor = 0;
+        private int mPopBgResource = 0;
         private int mPopArrowImg = 0;
         private List<Pair<Integer, String>> itemTextList = new LinkedList<>();
         private List<onSeparateItemClickListener> itemListenerList = new LinkedList<>();
@@ -195,8 +195,8 @@ public class SelectTextHelper {
         /**
          * 弹窗背景颜色、弹窗箭头
          */
-        public Builder setPopStyle(int popBgColor, int popArrowImg) {
-            mPopBgColor = popBgColor;
+        public Builder setPopStyle(int popBgResource, int popArrowImg) {
+            mPopBgResource = popBgResource;
             mPopArrowImg = popArrowImg;
             return this;
         }
@@ -231,7 +231,7 @@ public class SelectTextHelper {
         mScrollShow = builder.mScrollShow;
         mMagnifierShow = builder.mMagnifierShow;
         mPopSpanCount = builder.mPopSpanCount;
-        mPopBgColor = builder.mPopBgColor;
+        mPopBgResource = builder.mPopBgResource;
         mPopArrowImg = builder.mPopArrowImg;
         mSelectedAllNoPop = builder.mSelectedAllNoPop;
         itemTextList = builder.itemTextList;
@@ -580,6 +580,12 @@ public class SelectTextHelper {
             View contentView = LayoutInflater.from(context).inflate(R.layout.pop_operate, null);
             rv_content = contentView.findViewById(R.id.rv_content);
             iv_arrow = contentView.findViewById(R.id.iv_arrow);
+            if (0 != mPopBgResource) {
+                rv_content.setBackgroundResource(mPopBgResource);
+            }
+            if (0 != mPopArrowImg) {
+                iv_arrow.setBackgroundResource(mPopArrowImg);
+            }
 
             int size = itemTextList.size();
             // 宽 个数超过mPopSpanCount 取 mPopSpanCount

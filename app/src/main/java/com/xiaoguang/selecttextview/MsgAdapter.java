@@ -177,6 +177,7 @@ public class MsgAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
          */
         private void selectText(MsgBean msgBean) {
             textMsgBean = msgBean;
+
             mSelectableTextHelper = new SelectTextHelper
                     .Builder(textView)// 放你的textView到这里！！
                     .setCursorHandleColor(mContext.getResources().getColor(R.color.colorAccent))// 游标颜色
@@ -189,7 +190,10 @@ public class MsgAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     .addItem(R.drawable.ic_msg_copy, R.string.copy, () -> copy(mSelectableTextHelper, selectedText))
                     .addItem(R.drawable.ic_msg_select_all, R.string.select_all, this::selectAll)
                     .addItem(R.drawable.ic_msg_forward, R.string.forward, this::forward)
+                    .setPopSpanCount(5)// 设置操作弹窗每行个数 default 5
+                    .setPopStyle(R.drawable.shape_color_4c4c4c_radius_8/*操作弹窗背*/, R.drawable.ic_arrow/*箭头图片*/)// 设置操作弹窗背景色、箭头图片
                     .build();
+
             mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener() {
                 /**
                  * 点击回调
