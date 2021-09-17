@@ -5,11 +5,10 @@
 SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双击查看文本内容框架。 汇聚底层TextView框架、原理并加以整理得出的一个实用的Helper。
 仅用两个类实现便实现如此强大的功能，用法也超级简单。
 
-### 项目演示
+[![](https://jitpack.io/v/ITxiaoguang/SelectTextHelper.svg)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
 
-|消息页效果|查看内容效果|
-|:---:|:---:|
-|![1631677218586.gif](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e6e8d9451a7b4ebd8a1a8292d0c38ded~tplv-k3u1fbpfcp-watermark.image?)|![1631678150191.gif](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85c0156baffe4e558a9fa8316fe3260d~tplv-k3u1fbpfcp-watermark.image?)|
+
+### 项目演示
 
 |消息页全选|消息页自由复制放大镜|
 |:---:|:---:|
@@ -32,12 +31,33 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 
 ## Demo
 
-[下载 APK-Demo](https://github.com/ITxiaoguang/SelectTextHelper/看效果.apk)
+[下载 APK-Demo](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/%E7%9C%8B%E6%95%88%E6%9E%9C.apk)
+
+## 如何添加
+### Gradle添加：
+#### 1.在Project的build.gradle中添加仓库地址
+
+``` gradle
+	allprojects {
+		repositories {
+			...
+			maven { url "https://jitpack.io" }
+		}
+	}
+```
+
+#### 2.在Module目录下的build.gradle中添加依赖
+``` gradle
+	dependencies {
+	        implementation 'com.github.ITxiaoguang:SelectTextHelper:1.0.0'
+	}
+```
 
 ## 传送门
 
 - [仿照的例子](https://www.dazhuanlan.com/t0915/topics/1440960)
 - [放大镜](https://developer.android.google.cn/guide/topics/text/magnifier)
+- [TextView](https://developer.android.google.cn/reference/android/widget/TextView)
 
 #### 主要实现
 
@@ -47,7 +67,7 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 ## 简单用例
 
 #### 1.导入代码
-把该项目里的selecttext Module放入你的项目里面
+把该项目里的selecttext Module放入你的项目里面 或者 按照Gradle添加的步骤导入依赖。
 
 #### 2.给你的 TextView 创建Helper和加监听
 
@@ -141,7 +161,8 @@ SelectTextHelper mSelectableTextHelper=new SelectTextHelper
 
 #### 3.demo中提供了查看文本内容的SelectTextDialog 和 消息列表自由复制MainActivity,请自行参照。
 
-查看文本内容使用方法： 该方法比较简单，将textView参照步骤2放入SelectTextHelper中，在dismiss调用SelectTextHelper的reset()即可。
+查看文本内容使用方法：
+- 该方法比较简单，将textView参照步骤2放入SelectTextHelper中，在dismiss调用SelectTextHelper的reset()即可。
 
 ```java
 @Override
@@ -229,11 +250,4 @@ private void removeShowSelectView(){
 
 private final Runnable mShowSelectViewRunnable=
         ()->mSelectableTextHelper.reset();
-```
-
-如果使用 AndroidX 先在 gradle.properties 中添加，两行都不能少噢~
-
-```
-android.useAndroidX=true
-android.enableJetifier=true
 ```

@@ -1,13 +1,16 @@
 plugins {
     id 'com.android.library'
+    // 1. 【必加】 启用 android-maven 插件
+    id 'com.github.dcendents.android-maven'
 }
+// 2. 【必加】 关联Github地址, 格式为 com.github.(用户名)
+group = 'com.github.ITxiaoguang'
 
 android {
     compileSdkVersion 30
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 30
+        minSdkVersion 14
     }
 
     compileOptions {
@@ -19,7 +22,4 @@ android {
 
 dependencies {
     implementation 'com.google.android.material:material:1.4.0'
-
-    // eventbus
-    implementation 'org.greenrobot:eventbus:3.1.1'
 }

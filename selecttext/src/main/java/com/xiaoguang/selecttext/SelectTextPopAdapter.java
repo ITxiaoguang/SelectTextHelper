@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * 弹窗 适配器
- * hxg 2020.9.13 qq:929842234
+ * hxg 2020.9.13 qq:929842234@qq.com
  */
 public class SelectTextPopAdapter extends RecyclerView.Adapter<SelectTextPopAdapter.ViewHolder> {
 

@@ -38,8 +38,7 @@ import java.util.List;
 
 
 /**
- * Created by hxg on 21/9/13.
- * 929842234@qq.com
+ * Created by hxg on 21/9/13 929842234@qq.com
  * <p>
  * 仿照的例子：https://github.com/laobie
  * 放大镜 Magnifier：https://developer.android.google.cn/guide/topics/text/magnifier
