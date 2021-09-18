@@ -2,13 +2,17 @@
 
 ## [掘金地址](https://juejin.cn/post/7008080194116255752) [github地址](https://github.com/ITxiaoguang/SelectTextHelper)
 
-SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双击查看文本内容框架。 汇聚底层TextView框架、原理并加以整理得出的一个实用的Helper。
+`SelectTextHelper`打造一个全网最逼近微信聊天消息自由复制，双击查看文本内容框架。 汇聚底层`TextView`框架、原理并加以整理得出的一个实用的`Helper`。
 仅用两个类实现便实现如此强大的功能，用法也超级简单。
 
 [![](https://jitpack.io/v/ITxiaoguang/SelectTextHelper.svg)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
 
 
 ### 项目演示
+
+|消息页效果|查看内容效果|
+|:---:|:---:|
+|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/gif1.gif)|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/gif3.gif)|
 
 |消息页全选|消息页自由复制放大镜|
 |:---:|:---:|
@@ -35,23 +39,24 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 
 ## 如何添加
 ### Gradle添加：
-#### 1.在Project的build.gradle中添加仓库地址
+#### 1.在Project的`build.gradle`中添加仓库地址
 
 ``` gradle
-	allprojects {
-		repositories {
-			...
-			maven { url "https://jitpack.io" }
-		}
-	}
+allprojects {
+    repositories {
+        ...
+        maven { url "https://jitpack.io" }
+    }
+}
 ```
 
-#### 2.在Module目录下的build.gradle中添加依赖 
+#### 2.在Module目录下的`build.gradle`中添加依赖
+
 [![](https://jitpack.io/v/ITxiaoguang/SelectTextHelper.svg)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
 ``` gradle
-	dependencies {
-	        implementation 'com.github.ITxiaoguang:SelectTextHelper:xxx'
-	}
+dependencies {
+    implementation 'com.github.ITxiaoguang:SelectTextHelper:xxx'
+}
 ```
 
 ## 传送门
@@ -60,17 +65,16 @@ SelectTextHelper打造一个全网最逼近微信聊天消息自由复制，双�
 - [放大镜](https://developer.android.google.cn/guide/topics/text/magnifier)
 - [TextView](https://developer.android.google.cn/reference/android/widget/TextView)
 
-#### 主要实现
+### 主要实现
 
-通过 [仿照的例子](https://www.dazhuanlan.com/t0915/topics/1440960) 并改进弹窗坐标位置、大小加上EventBus实现
+通过 [仿照的例子](https://www.dazhuanlan.com/t0915/topics/1440960) 并改进弹窗坐标位置、大小加上`EventBus`实现
 
-
-## 简单用例
+### 简单用例
 
 #### 1.导入代码
-把该项目里的selecttext Module放入你的项目里面 或者 按照Gradle添加的步骤导入依赖。
+把该项目里的`selecttext Module`放入你的项目里面 或者 按照`Gradle`添加的步骤导入依赖。
 
-#### 2.给你的 TextView 创建Helper和加监听
+#### 2.给你的`TextView`创建`Helper`和加监听
 
 ```java
 SelectTextHelper mSelectableTextHelper=new SelectTextHelper
@@ -162,10 +166,10 @@ SelectTextHelper mSelectableTextHelper=new SelectTextHelper
 
 ```
 
-#### 3.demo中提供了查看文本内容的SelectTextDialog 和 消息列表自由复制MainActivity,请自行参照。
+#### 3.demo中提供了查看文本内容的`SelectTextDialog`和 消息列表自由复制`MainActivity`
 
-查看文本内容使用方法：
-- 该方法比较简单，将textView参照步骤2放入SelectTextHelper中，在dismiss调用SelectTextHelper的reset()即可。
+查看文本内容方法：
+- 该方法比较简单，将`textView`参照步骤2放入`SelectTextHelper`中，在`dismiss`调用`SelectTextHelper`的`reset()`即可。
 
 ```java
 @Override
@@ -175,16 +179,16 @@ public void dismiss(){
 }
 ```
 
-高仿微信聊天消息列表自由复制使用方法：
+高仿微信聊天消息列表自由复制方法：
 
-- recycleView + adapter + 多布局的使用在这里不阐述，请看demo。
+- `recycleView` + `adapter` + 多布局的使用在这里不阐述，请看本项目demo。
 
-- 为adapter里text类型ViewHolder中的textView参照步骤2放入SelectTextHelper中，注册SelectTextEventBus。
+- 为`adapter`里text类型`ViewHolder`中的`textView`参照步骤2放入`SelectTextHelper`中，注册`SelectTextEventBus`。
 
-- SelectTextEventBus类特别说明、原理：
-  SelectTextEventBus在register时记录下类和方法，方便在Activity/Fragment Destroy时unregister所有EventBus
+- `SelectTextEventBus`类特别说明、原理：
+  `SelectTextEventBus`在`EventBus`基础上加功能。在`register`时记录下类和方法，方便在`Activity/Fragment Destroy`时`unregister`所有`SelectTextEventBus`的`EventBus`。
 
-- text类型ViewHolder 添加EventBus监听
+- text类型`ViewHolder` 添加`EventBus`监听
 
 ```java
 /**
@@ -210,7 +214,7 @@ public void handleSelector(SelectTextEvent event){
 }
 ```
 
-- 重写adapter里的onViewRecycled方法，该方法在回收View时调用
+- 重写`adapter`里的`onViewRecycled`方法，该方法在回收`View`时调用
 
 ```java
 @Override
