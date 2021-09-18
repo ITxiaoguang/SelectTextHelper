@@ -12,7 +12,7 @@
 
 |消息页效果|查看内容效果|
 |:---:|:---:|
-|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/gif1.gif)|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/gif3.gif)|
+|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/screenshots/gif1.gif)|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/screenshots/gif3.gif)|
 
 |消息页全选|消息页自由复制放大镜|
 |:---:|:---:|
