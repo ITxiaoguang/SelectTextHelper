@@ -10,10 +10,6 @@
 
 ### 项目演示
 
-|消息页效果|查看内容效果|
-|:---:|:---:|
-|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/screenshots/gif1.gif)|![](https://github.com/ITxiaoguang/SelectTextHelper/blob/master/screenshots/gif3.gif)|
-
 |消息页全选|消息页自由复制放大镜|
 |:---:|:---:|
 |![demo_1.jpg](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/99068250b93644d4921c3afe4ef39dbc~tplv-k3u1fbpfcp-watermark.image?)|![demo_2.jpg](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c800612998d4415e95c23a201f99c669~tplv-k3u1fbpfcp-watermark.image?)|
@@ -21,6 +17,8 @@
 |消息页选中文本|查看内容|
 |:---:|:---:|
 |![demo_3.jpg](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b9567b55e9384dcebf394202a9ec849c~tplv-k3u1fbpfcp-watermark.image?)|![demo_4.jpg](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7cd289a09a2142d2a50232e717cbd179~tplv-k3u1fbpfcp-watermark.image?)|
+
+更多效果图请看[掘金](https://juejin.cn/post/7008080194116255752)
 
 ## 特点功能:
 
@@ -31,7 +29,6 @@
 - 支持放大镜功能
 - 支持全选情况下自定义弹窗
 - 支持操作弹窗：每行个数、图片、文字、监听回调、弹窗颜色、箭头图片
-- 支持 AndroidX
 
 ## Demo
 
