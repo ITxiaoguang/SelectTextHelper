@@ -84,9 +84,9 @@ SelectTextHelper mSelectableTextHelper=new SelectTextHelper
     .setSelectedAllNoPop(true)// 已经全选无弹窗，设置了true在监听会回调 onSelectAllShowCustomPop 方法 default false
     .setMagnifierShow(true)// 放大镜 default true
     .setPopSpanCount(5)// 设置操作弹窗每行个数 default 5
-    .setPopStyle(R.drawable.shape_color_4c4c4c_radius_8/*操作弹窗背*/, R.drawable.ic_arrow/*箭头图片*/)// 设置操作弹窗背景色、箭头图片
-    .addItem(0/*item的图标*/,"复制"/*item的描述*/, // 操作弹窗的每个item
-    ()->Log.i("SelectTextHelper","复制")/*item的回调*/)
+    .setPopStyle(R.drawable.shape_color_4c4c4c_radius_8/*操作弹窗背景*/, R.drawable.ic_arrow/*箭头图片*/)// 设置操作弹窗背景色、箭头图片
+    .addItem(0/*item的图标*/,"复制"/*item的描述*/,
+    ()->Log.i("SelectTextHelper","复制")/*item的回调*/)// 操作弹窗的每个item
     .build();
 
     mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener(){
