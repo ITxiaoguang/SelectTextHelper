@@ -89,7 +89,7 @@ SelectTextHelper mSelectableTextHelper=new SelectTextHelper
     ()->Log.i("SelectTextHelper","复制")/*item的回调*/)// 操作弹窗的每个item
     .build();
 
-    mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener(){
+mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener(){
     /**
      * 点击回调
      */
@@ -254,4 +254,10 @@ private void removeShowSelectView(){
 
 private final Runnable mShowSelectViewRunnable=
         ()->mSelectableTextHelper.reset();
+```
+
+- 去除超链接点击背景色（感谢https://github.com/ITxiaoguang/SelectTextHelper/issues/2）
+
+```java
+textView.setHighlightColor(Color.TRANSPARENT);
 ```
