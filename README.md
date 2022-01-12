@@ -256,7 +256,7 @@ private final Runnable mShowSelectViewRunnable=
         ()->mSelectableTextHelper.reset();
 ```
 
-- 去除超链接点击背景色（感谢https://github.com/ITxiaoguang/SelectTextHelper/issues/2）
+- 去除超链接点击背景色（感谢技术支持 https://github.com/ITxiaoguang/SelectTextHelper/issues/2 ）
 
 ```java
 textView.setHighlightColor(Color.TRANSPARENT);
