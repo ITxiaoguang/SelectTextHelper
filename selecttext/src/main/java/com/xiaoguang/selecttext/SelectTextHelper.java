@@ -529,7 +529,19 @@ public class SelectTextHelper {
     private void showCursorHandle(CursorHandle cursorHandle) {
         Layout layout = mTextView.getLayout();
         int offset = cursorHandle.isLeft ? mSelectionInfo.mStart : mSelectionInfo.mEnd;
-        cursorHandle.show((int) layout.getPrimaryHorizontal(offset), layout.getLineBottom(layout.getLineForOffset(offset)));
+        int x = (int) layout.getPrimaryHorizontal(offset);
+        int y = layout.getLineBottom(layout.getLineForOffset(offset));
+
+        // 右游标
+        // mSelectionInfo.mEnd != 0 不是第一位
+        // x == 0 右游标在最后面
+        // 把右游标水平坐标定位在减去一个字的线条右侧
+        // 把右游标底部线坐标定位在上一行
+        if (!cursorHandle.isLeft && mSelectionInfo.mEnd != 0 && x == 0) {
+            x = (int) layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
+            y = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
+        }
+        cursorHandle.show(x, y);
     }
 
     private void selectText(int startPos, int endPos) {
@@ -841,8 +853,18 @@ public class SelectTextHelper {
                 mPopupWindow.update((int) layout.getPrimaryHorizontal(mSelectionInfo.mStart) - mWidth + getExtraX(),
                         layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mStart)) + getExtraY(), -1, -1);
             } else {
-                mPopupWindow.update((int) layout.getPrimaryHorizontal(mSelectionInfo.mEnd) + getExtraX(),
-                        layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd)) + getExtraY(), -1, -1);
+                int horizontalEnd = (int) layout.getPrimaryHorizontal(mSelectionInfo.mEnd);
+                int lineBottomEnd = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd));
+                // 右游标
+                // mSelectionInfo.mEnd != 0 不是第一位
+                // horizontalEnd == 0 右游标在最后面
+                // 把右游标水平坐标定位在减去一个字的线条右侧
+                // 把右游标底部线坐标定位在上一行
+                if (mSelectionInfo.mEnd != 0 && horizontalEnd == 0) {
+                    horizontalEnd = (int) layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
+                    lineBottomEnd = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
+                }
+                mPopupWindow.update(horizontalEnd + getExtraX(), lineBottomEnd + getExtraY(), -1, -1);
             }
         }
 
