@@ -3,16 +3,20 @@ package com.xiaoguang.selecttext;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Selection;
 import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
+import android.text.style.DynamicDrawableSpan;
 import android.text.style.URLSpan;
 import android.util.Pair;
 import android.view.Gravity;
@@ -30,11 +34,17 @@ import android.widget.TextView;
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.StringRes;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -308,6 +318,10 @@ public class SelectTextHelper {
      */
 
     private void init() {
+        SpannableStringBuilder spanStr = new SpannableStringBuilder(mTextView.getText().toString());
+        SelectTextHelper.replaceText2Emoji(mContext, spanStr, mTextView.getText().toString());
+        mTextView.setText(spanStr);
+
         mTextView.setText(mTextView.getText(), TextView.BufferType.SPANNABLE);
 
         mTextView.setOnTouchListener((v, event) -> {
@@ -457,6 +471,7 @@ public class SelectTextHelper {
     }
 
     private void resetSelectionInfo() {
+        resetEmojiBackground();
         mSelectionInfo.mSelectionContent = null;
         if (mSpannable != null && mSpan != null) {
             mSpannable.removeSpan(mSpan);
@@ -567,6 +582,109 @@ public class SelectTextHelper {
             if (mSelectListener != null) {
                 mSelectListener.onTextSelected(mSelectionInfo.mSelectionContent);
             }
+
+            // 设置图片表情选中背景
+            setEmojiBackground();
+        }
+    }
+
+    public static Map<String, Integer> emojiMap = new HashMap<>();
+
+    /**
+     * 文字转化成图片背景
+     *
+     * @param stringBuilder
+     * @param content
+     * @return
+     */
+    public static SpannableStringBuilder replaceText2Emoji(Context context,
+                                                           SpannableStringBuilder stringBuilder,
+                                                           String content) {
+        if (emojiMap.isEmpty()) {
+            return stringBuilder;
+        }
+        for (Map.Entry<String, Integer> entry : emojiMap.entrySet()) {
+            Matcher matcher = Pattern.compile(entry.getKey()).matcher(content);
+            while (matcher.find()) {
+                int start = matcher.start();
+                int end = matcher.end();
+                int drawableRes = entry.getValue();
+
+                Drawable drawable = ContextCompat.getDrawable(context, drawableRes);
+                drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+                SelectImageSpan span = new SelectImageSpan(drawable, Color.TRANSPARENT, DynamicDrawableSpan.ALIGN_CENTER);
+
+                stringBuilder.setSpan(span, start, end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+            }
+        }
+
+        return stringBuilder;
+    }
+
+    /**
+     * 设置图片表情选中背景
+     */
+    private void setEmojiBackground() {
+        if (emojiMap.isEmpty()) {
+            return;
+        }
+
+        // 前部 透明背景
+        setEmojiBackground((Spannable) mSpannable.subSequence(0, mSelectionInfo.mStart), Color.TRANSPARENT);
+        // 中间 选择背景
+        setEmojiBackground((Spannable) mSpannable.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd), mSelectedColor);
+        // 尾部 透明背景
+        setEmojiBackground((Spannable) mSpannable.subSequence(mSelectionInfo.mEnd, mSpannable.length()), Color.TRANSPARENT);
+    }
+
+    /**
+     * 利用反射改变图片背景颜色
+     *
+     * @param mSpannable Spannable
+     * @param bgColor    background
+     */
+    private void setEmojiBackground(Spannable mSpannable, @ColorInt int bgColor) {
+        if (null == mSpannable) {
+            return;
+        }
+        try {
+            Object[] mSpans = ((Object[]) getFieldValue(mSpannable, "mSpans"));
+            if (null != mSpans) {
+                for (Object mSpan : mSpans) {
+                    if (mSpan instanceof SelectImageSpan) {
+                        SelectImageSpan imageSpan = (SelectImageSpan) mSpan;
+                        if (imageSpan.getBgColor() != bgColor) {
+                            imageSpan.setBgColor(bgColor);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 重置emoji选择背景
+     */
+    private void resetEmojiBackground() {
+        if (null == mSpannable) {
+            return;
+        }
+        try {
+            Object[] mSpans = ((Object[]) getFieldValue(mSpannable, "mSpans"));
+            if (null != mSpans) {
+                for (Object mSpan : mSpans) {
+                    if (mSpan instanceof SelectImageSpan) {
+                        SelectImageSpan imageSpan = (SelectImageSpan) mSpan;
+                        if (imageSpan.getBgColor() != Color.TRANSPARENT) {
+                            imageSpan.setBgColor(Color.TRANSPARENT);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -1098,5 +1216,28 @@ public class SelectTextHelper {
             return STATUS_HEIGHT;
         }
         return -1;
+    }
+
+    /**
+     * 反射获取对象属性值
+     */
+    public static Object getFieldValue(Object obj, String fieldName) {
+        if (obj == null || TextUtils.isEmpty(fieldName)) {
+            return null;
+        }
+
+        Class<?> clazz = obj.getClass();
+        while (clazz != Object.class) {
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return field.get(obj);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            clazz = clazz.getSuperclass();
+        }
+
+        return null;
     }
 }

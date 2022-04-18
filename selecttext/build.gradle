@@ -2,6 +2,7 @@ plugins {
     id 'com.android.library'
     // 1. 【必加】 启用 android-maven 插件
     id 'com.github.dcendents.android-maven'
+    id 'kotlin-android'
 }
 // 2. 【必加】 关联Github地址, 格式为 com.github.(用户名)
 group = 'com.github.ITxiaoguang'
@@ -16,6 +17,10 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
 
 }
