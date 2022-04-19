@@ -25,9 +25,19 @@ class SelectImageSpan(drawable: Drawable, @ColorInt var bgColor: Int, verticalAl
     ) {
         val b = drawable
         canvas.save()
+
+        // From gnmmdk
         paint.color = bgColor
         canvas.drawRect(x, top.toFloat(), x + b.bounds.right, bottom.toFloat(), paint)
-        val transY = (bottom - top - b.bounds.bottom) / 2 + top
+
+        // From super.draw(canvas, text, start, end, x, top, y, bottom, paint)
+        var transY = bottom - b.bounds.bottom
+        if (mVerticalAlignment == ALIGN_BASELINE) {
+            transY -= paint.fontMetricsInt.descent
+        } else if (mVerticalAlignment == ALIGN_CENTER) {
+            transY = top + (bottom - top) / 2 - b.bounds.height() / 2
+        }
+
         canvas.translate(x, transY.toFloat())
         b.draw(canvas)
         canvas.restore()
