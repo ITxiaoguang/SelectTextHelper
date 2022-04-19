@@ -644,7 +644,7 @@ public class SelectTextHelper {
      * @param bgColor    background
      */
     private void setEmojiBackground(Spannable mSpannable, @ColorInt int bgColor) {
-        if (null == mSpannable) {
+        if (TextUtils.isEmpty(mSpannable)) {
             return;
         }
         try {
@@ -668,7 +668,7 @@ public class SelectTextHelper {
      * 重置emoji选择背景
      */
     private void resetEmojiBackground() {
-        if (null == mSpannable) {
+        if (TextUtils.isEmpty(mSpannable)) {
             return;
         }
         try {
