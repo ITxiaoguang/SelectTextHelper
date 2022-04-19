@@ -320,9 +320,10 @@ public class SelectTextHelper {
     private void init() {
         SpannableStringBuilder spanStr = new SpannableStringBuilder(mTextView.getText().toString());
         SelectTextHelper.replaceText2Emoji(mContext, spanStr, mTextView.getText().toString());
-        mTextView.setText(spanStr);
 
-        mTextView.setText(mTextView.getText(), TextView.BufferType.SPANNABLE);
+        // 去除超链接点击背景色 https://github.com/ITxiaoguang/SelectTextHelper/issues/2
+        mTextView.setHighlightColor(Color.TRANSPARENT);
+        mTextView.setText(spanStr, TextView.BufferType.SPANNABLE);
 
         mTextView.setOnTouchListener((v, event) -> {
             mTouchX = (int) event.getX();
