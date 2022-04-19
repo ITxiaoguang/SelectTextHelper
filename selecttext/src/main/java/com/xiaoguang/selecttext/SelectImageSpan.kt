@@ -7,11 +7,17 @@ import android.text.style.ImageSpan
 import androidx.annotation.ColorInt
 
 /**
+ * 继承ImageSpan，绘制图片背景
+ *
  * Create by gnmmdk
  */
 class SelectImageSpan(drawable: Drawable, @ColorInt var bgColor: Int, verticalAlignment: Int) :
     ImageSpan(drawable, verticalAlignment) {
 
+    /**
+     * 重写 draw 方法
+     * 绘制背景
+     */
     override fun draw(
         canvas: Canvas,
         text: CharSequence?,
@@ -23,23 +29,23 @@ class SelectImageSpan(drawable: Drawable, @ColorInt var bgColor: Int, verticalAl
         bottom: Int,
         paint: Paint
     ) {
-        val b = drawable
+        // From super.draw(canvas, text, start, end, x, top, y, bottom, paint)
+        val d = drawable
         canvas.save()
 
         // From gnmmdk
         paint.color = bgColor
-        canvas.drawRect(x, top.toFloat(), x + b.bounds.right, bottom.toFloat(), paint)
+        canvas.drawRect(x, top.toFloat(), x + d.bounds.right, bottom.toFloat(), paint)
 
         // From super.draw(canvas, text, start, end, x, top, y, bottom, paint)
-        var transY = bottom - b.bounds.bottom
+        var transY = bottom - d.bounds.bottom
         if (mVerticalAlignment == ALIGN_BASELINE) {
             transY -= paint.fontMetricsInt.descent
         } else if (mVerticalAlignment == ALIGN_CENTER) {
-            transY = top + (bottom - top) / 2 - b.bounds.height() / 2
+            transY = top + (bottom - top) / 2 - d.bounds.height() / 2
         }
-
         canvas.translate(x, transY.toFloat())
-        b.draw(canvas)
+        d.draw(canvas)
         canvas.restore()
     }
 
