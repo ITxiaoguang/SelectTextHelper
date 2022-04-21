@@ -8,6 +8,7 @@ import androidx.annotation.ColorInt
 
 /**
  * 继承ImageSpan，绘制图片背景
+ * https://developer.android.google.cn/reference/android/text/style/DynamicDrawableSpan
  *
  * Create by gnmmdk
  */
@@ -33,7 +34,7 @@ class SelectImageSpan(drawable: Drawable, @ColorInt var bgColor: Int, verticalAl
         val d = drawable
         canvas.save()
 
-        // From gnmmdk
+        // From gnmmdk 修改canvas paint颜色实现
         paint.color = bgColor
         canvas.drawRect(x, top.toFloat(), x + d.bounds.right, bottom.toFloat(), paint)
 

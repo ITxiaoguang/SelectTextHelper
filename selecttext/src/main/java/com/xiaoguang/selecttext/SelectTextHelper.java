@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
 public class SelectTextHelper {
 
     private static int DEFAULT_SELECTION_LENGTH = 2;// 选2个字节长度 例:表情属于2个字节
-    private static int DEFAULT_SHOW_DURATION = 100;// 弹窗100毫秒
+    private static int DEFAULT_SHOW_DURATION = 100;// 弹窗100毫秒延迟
 
     private CursorHandle mStartHandle;// 开始操作标
     private CursorHandle mEndHandle;// 结束操作标
@@ -319,7 +319,7 @@ public class SelectTextHelper {
 
     private void init() {
         SpannableStringBuilder spanStr = new SpannableStringBuilder(mTextView.getText().toString());
-        SelectTextHelper.replaceText2Emoji(mContext, spanStr, mTextView.getText().toString());
+        replaceText2Emoji(mContext, spanStr, mTextView.getText().toString());
 
         // 去除超链接点击背景色 https://github.com/ITxiaoguang/SelectTextHelper/issues/2
         mTextView.setHighlightColor(Color.TRANSPARENT);
@@ -480,6 +480,10 @@ public class SelectTextHelper {
         }
     }
 
+    /**
+     * @param x 长按时的手指的x坐标
+     * @param y 长按时的手指的y坐标
+     */
     private void showSelectView(int x, int y) {
         reset();
         isHide = false;
@@ -492,12 +496,44 @@ public class SelectTextHelper {
             mSpannable = (Spannable) mTextView.getText();
         }
         if (mSpannable == null || endOffset - 1 >= mTextView.getText().length()) {
-            return;
+            endOffset = mTextView.getText().length();
         }
+        endOffset = handleEndOffset(startOffset, endOffset);
         selectText(startOffset, endOffset);
         showCursorHandle(mStartHandle);
         showCursorHandle(mEndHandle);
         showOperateWindow();
+    }
+
+    /**
+     * 处理endOffset位置
+     * ImageSpan文本，则会加够ImageSpan匹配的字符
+     * Emoji文本，则去除最后的文字emoji字符
+     *
+     * @param startOffset 开始文字坐标
+     * @param endOffset   结束文字坐标
+     * @return endOffset
+     */
+    private int handleEndOffset(int startOffset, int endOffset) {
+        Spannable selectText = (Spannable) mSpannable.subSequence(startOffset, endOffset);
+        // 是否ImageSpan文本
+        if (isImageSpanText(selectText)) {
+            // 是否匹配Image
+            while (!matchImageSpan(selectText.toString())) {
+                endOffset++;
+                selectText = (Spannable) mSpannable.subSequence(startOffset, endOffset);
+            }
+        }
+        // 选中的文字倒数第二个是文字 且 倒数第一个字符是文字emoji
+        // 则去除最后的文字emoji字符
+        String selectTextString = selectText.toString();
+        if (selectTextString.length() > 1) {
+            if (!isEmojiText(selectTextString.charAt(selectTextString.length() - 2))
+                    && isEmojiText(selectTextString.charAt(selectTextString.length() - 1))) {
+                endOffset--;
+            }
+        }
+        return endOffset;
     }
 
     /**
@@ -594,15 +630,15 @@ public class SelectTextHelper {
     /**
      * 文字转化成图片背景
      *
-     * @param stringBuilder
-     * @param content
-     * @return
+     * @param context       Context
+     * @param stringBuilder SpannableStringBuilder text
+     * @param content       Target content
      */
-    public static SpannableStringBuilder replaceText2Emoji(Context context,
-                                                           SpannableStringBuilder stringBuilder,
-                                                           String content) {
+    public static void replaceText2Emoji(Context context,
+                                         SpannableStringBuilder stringBuilder,
+                                         String content) {
         if (emojiMap.isEmpty()) {
-            return stringBuilder;
+            return;
         }
         for (Map.Entry<String, Integer> entry : emojiMap.entrySet()) {
             Matcher matcher = Pattern.compile(entry.getKey()).matcher(content);
@@ -619,7 +655,6 @@ public class SelectTextHelper {
             }
         }
 
-        return stringBuilder;
     }
 
     /**
@@ -1240,5 +1275,61 @@ public class SelectTextHelper {
         }
 
         return null;
+    }
+
+    /**
+     * 判断是否为emoji表情符
+     *
+     * @param c 字符
+     * @return 是否为emoji字符
+     */
+    public static boolean isEmojiText(char c) {
+        return !(c == 0x0 ||
+                c == 0x9 ||
+                c == 0xA ||
+                c == 0xD ||
+                (c >= 0x20 && c <= 0xD7FF) ||
+                (c >= 0xE000 && c <= 0xFFFD) ||
+                (c >= 0x100000 && c <= 0x10FFFF));
+    }
+
+    /**
+     * 利用反射检测文本是否是ImageSpan文本
+     */
+    private static boolean isImageSpanText(Spannable mSpannable) {
+        if (TextUtils.isEmpty(mSpannable)) {
+            return false;
+        }
+        try {
+            Object[] mSpans = ((Object[]) getFieldValue(mSpannable, "mSpans"));
+            if (null != mSpans) {
+                for (Object mSpan : mSpans) {
+                    if (mSpan instanceof SelectImageSpan) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * 匹配Image
+     *
+     * @param content Target content
+     */
+    public static boolean matchImageSpan(String content) {
+        if (emojiMap.isEmpty()) {
+            return false;
+        }
+        for (Map.Entry<String, Integer> entry : emojiMap.entrySet()) {
+            Matcher matcher = Pattern.compile(entry.getKey()).matcher(content);
+            if (matcher.find()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
