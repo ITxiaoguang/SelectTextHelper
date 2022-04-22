@@ -1,75 +1,73 @@
-package com.xiaoguang.selecttextview;
+package com.xiaoguang.selecttextview
 
-
-import org.greenrobot.eventbus.EventBus;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.greenrobot.eventbus.EventBus
 
 /**
  * 选择文本的事件总线
  * 这里的方法比较low，用户自行实现
  * hxg 2021/9/2 14:26 qq:929842234
  */
-public class SelectTextEventBus {
-    private static volatile SelectTextEventBus defaultInstance;
+class SelectTextEventBus {
+    private val typesBySubscriber: MutableMap<Any, MutableList<Class<*>>>
 
-    private final Map<Object, List<Class<?>>> typesBySubscriber;
-
-    public SelectTextEventBus() {
-        typesBySubscriber = new HashMap<>();
+    init {
+        typesBySubscriber = HashMap()
     }
 
-    public static SelectTextEventBus getDefault() {
-        if (defaultInstance == null) {
-            synchronized (SelectTextEventBus.class) {
+    companion object {
+        @Volatile
+        private var defaultInstance: SelectTextEventBus? = null
+
+        @JvmStatic
+        val default: SelectTextEventBus
+            get() {
                 if (defaultInstance == null) {
-                    defaultInstance = new SelectTextEventBus();
+                    synchronized(SelectTextEventBus::class.java) {
+                        if (defaultInstance == null) {
+                            defaultInstance = SelectTextEventBus()
+                        }
+                    }
                 }
+                return defaultInstance!!
             }
-        }
-        return defaultInstance;
     }
 
-    public void register(Object subscriber, Class eventClass) {
-        EventBus.getDefault().register(subscriber);
-
-        List<Class<?>> subscribedEvents = typesBySubscriber.get(subscriber);
+    fun register(subscriber: Any, eventClass: Class<*>) {
+        EventBus.getDefault().register(subscriber)
+        var subscribedEvents = typesBySubscriber[subscriber]
         if (subscribedEvents == null) {
-            subscribedEvents = new ArrayList<>();
-            typesBySubscriber.put(subscriber, subscribedEvents);
+            subscribedEvents = ArrayList()
+            typesBySubscriber[subscriber] = subscribedEvents
         }
-
-        subscribedEvents.add(eventClass);
+        subscribedEvents.add(eventClass)
     }
 
-    public synchronized boolean isRegistered(Object subscriber) {
-        if (EventBus.getDefault().isRegistered(subscriber)) {
-            return true;
-        }
-        return typesBySubscriber.containsKey(subscriber);
+    @Synchronized
+    fun isRegistered(subscriber: Any): Boolean {
+        return if (EventBus.getDefault().isRegistered(subscriber)) {
+            true
+        } else typesBySubscriber.containsKey(subscriber)
     }
 
     /**
      * 这里主要实现了注销功能
      */
-    public synchronized void unregister() {
-        for (Object key : typesBySubscriber.keySet()) {
-            EventBus.getDefault().unregister(key);
+    @Synchronized
+    fun unregister() {
+        for (key in typesBySubscriber.keys) {
+            EventBus.getDefault().unregister(key)
         }
-
-        typesBySubscriber.clear();
+        typesBySubscriber.clear()
     }
 
     /**
      * 注销
      */
-    public synchronized void unregister(Object subscriber) {
+    @Synchronized
+    fun unregister(subscriber: Any) {
         if (typesBySubscriber.containsKey(subscriber)) {
-            EventBus.getDefault().unregister(subscriber);
-            typesBySubscriber.remove(subscriber);
+            EventBus.getDefault().unregister(subscriber)
+            typesBySubscriber.remove(subscriber)
         }
     }
 
@@ -78,8 +76,9 @@ public class SelectTextEventBus {
      *
      * @param event
      */
-    public void dispatch(Object event) {
-        EventBus.getDefault().post(event);
+    fun dispatch(event: Any?) {
+        EventBus.getDefault().post(event)
     }
+
 
 }

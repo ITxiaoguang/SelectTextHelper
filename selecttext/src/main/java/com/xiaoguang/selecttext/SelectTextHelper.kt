@@ -1,482 +1,711 @@
-package com.xiaoguang.selecttext;
+package com.xiaoguang.selecttext
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
-import android.text.Layout;
-import android.text.Selection;
-import android.text.Spannable;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.TextUtils;
-import android.text.method.LinkMovementMethod;
-import android.text.style.BackgroundColorSpan;
-import android.text.style.ClickableSpan;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.URLSpan;
-import android.util.Pair;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewConfiguration;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.ImageView;
-import android.widget.Magnifier;
-import android.widget.PopupWindow;
-import android.widget.TextView;
-
-import androidx.annotation.ColorInt;
-import androidx.annotation.DrawableRes;
-import androidx.annotation.StringRes;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.res.Resources
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.os.Build
+import android.text.*
+import android.text.method.LinkMovementMethod
+import android.text.style.BackgroundColorSpan
+import android.text.style.ClickableSpan
+import android.text.style.DynamicDrawableSpan
+import android.text.style.URLSpan
+import android.util.Pair
+import android.view.*
+import android.view.View.OnTouchListener
+import android.view.ViewTreeObserver.OnScrollChangedListener
+import android.widget.ImageView
+import android.widget.Magnifier
+import android.widget.PopupWindow
+import android.widget.TextView
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.xiaoguang.selecttext.SelectTextPopAdapter.onClickItemListener
+import java.util.*
+import java.util.regex.Pattern
 
 /**
  * Created by hxg on 21/9/13 929842234@qq.com
- * <p>
+ *
+ *
  * 仿照的例子：https://github.com/laobie
  * 放大镜 Magnifier：https://developer.android.google.cn/guide/topics/text/magnifier
  */
-public class SelectTextHelper {
+class SelectTextHelper(builder: Builder) {
+    private var mTextView: TextView
 
-    private static int DEFAULT_SELECTION_LENGTH = 2;// 选2个字节长度 例:表情属于2个字节
-    private static int DEFAULT_SHOW_DURATION = 100;// 弹窗100毫秒延迟
+    private var mStartHandle: CursorHandle? = null // 开始操作标
+    private var mEndHandle: CursorHandle? = null // 结束操作标
+    private var mOperateWindow: OperateWindow? = null // 操作弹窗
+    private var mMagnifier: Magnifier? = null // 放大镜组件
+    private val mSelectionInfo = SelectionInfo()
+    private var mSelectListener: OnSelectListener? = null
+    private val mContext: Context
+    private var mSpannable: Spannable? = null
+    private var mTouchX = 0
+    private var mTouchY = 0
+    private var mTextViewMarginStart = 0 // textView的marginStart值
+    private val mSelectedColor: Int // 选中文本的颜色
+    private val mCursorHandleColor: Int // 游标的颜色
+    private val mCursorHandleSize: Int // 游标大小
+    private val mSelectAll: Boolean // 全选
+    private val mSelectedAllNoPop: Boolean // 已经全选无弹窗
+    private val mScrollShow: Boolean // 滑动依然显示弹窗
+    private val mMagnifierShow: Boolean // 显示放大镜
+    private val mPopSpanCount: Int // 弹窗每行个数
+    private val mPopBgResource: Int // 弹窗箭头
+    private val mSelectTextLength: Int // 首次选择文字长度
+    private val mPopDelay: Int // 弹窗延迟时间
+    private val mPopArrowImg: Int // 弹窗箭头
+    private val itemTextList: List<Pair<Int, String>> // 操作弹窗item文本
+    private var itemListenerList: List<Builder.onSeparateItemClickListener> =
+        LinkedList() // 操作弹窗item监听
+    private var mSpan: BackgroundColorSpan? = null
+    private var isHideWhenScroll = false
+    private var isHide = true
+    private var usedClickListener = false // 消费了点击事件
+    private var mOnPreDrawListener: ViewTreeObserver.OnPreDrawListener? = null
+    private var mOnScrollChangedListener: OnScrollChangedListener? = null
+    private var mRootTouchListener: OnTouchListener? = null
 
-    private CursorHandle mStartHandle;// 开始操作标
-    private CursorHandle mEndHandle;// 结束操作标
-    private OperateWindow mOperateWindow;// 操作弹窗
-    private Magnifier mMagnifier;// 放大镜组件
-    private SelectionInfo mSelectionInfo = new SelectionInfo();
-    private OnSelectListener mSelectListener;
-
-    private Context mContext;
-    private TextView mTextView;
-    private Spannable mSpannable;
-
-    private int mTouchX;
-    private int mTouchY;
-    private int mTextViewMarginStart = 0;// textView的marginStart值
-
-    private int mSelectedColor; // 选中文本的颜色
-    private int mCursorHandleColor; // 游标的颜色
-    private int mCursorHandleSize; // 游标大小
-    private boolean mSelectAll; // 全选
-    private boolean mSelectedAllNoPop; // 已经全选无弹窗
-    private boolean mScrollShow; // 滑动依然显示弹窗
-    private boolean mMagnifierShow; // 显示放大镜
-    private int mPopSpanCount; // 弹窗每行个数
-    private int mPopBgResource; // 弹窗箭头
-    private int mPopArrowImg; // 弹窗箭头
-    private List<Pair<Integer, String>> itemTextList;// 操作弹窗item文本
-    private List<Builder.onSeparateItemClickListener> itemListenerList = new LinkedList<>();// 操作弹窗item监听
-
-    private BackgroundColorSpan mSpan;
-    private boolean isHideWhenScroll;
-    private boolean isHide = true;
-    private boolean usedClickListener = false;// 消费了点击事件
-
-    private ViewTreeObserver.OnPreDrawListener mOnPreDrawListener;
-    private ViewTreeObserver.OnScrollChangedListener mOnScrollChangedListener;
-    private View.OnTouchListener mRootTouchListener;
+    init {
+        mTextView = builder.mTextView
+        mContext = mTextView.context
+        mSelectedColor = builder.mSelectedColor
+        mCursorHandleColor = builder.mCursorHandleColor
+        mSelectAll = builder.mSelectAll
+        mScrollShow = builder.mScrollShow
+        mMagnifierShow = builder.mMagnifierShow
+        mPopSpanCount = builder.mPopSpanCount
+        mPopBgResource = builder.mPopBgResource
+        mSelectTextLength = builder.mSelectTextLength
+        mPopDelay = builder.mPopDelay
+        mPopArrowImg = builder.mPopArrowImg
+        mSelectedAllNoPop = builder.mSelectedAllNoPop
+        itemTextList = builder.itemTextList
+        itemListenerList = builder.itemListenerList
+        mCursorHandleSize = dp2px(builder.mCursorHandleSizeInDp)
+        init()
+    }
 
     /**
      * public start
      */
+    companion object {
+        private const val DEFAULT_SELECTION_LENGTH = 2 // 选2个字节长度 例:表情属于2个字节
+        private const val DEFAULT_SHOW_DURATION = 100 // 弹窗100毫秒延迟
 
-    public interface OnSelectListener {
-        void onClick(View v);// 点击textView
+        /**
+         * public start
+         */
+        @Volatile
+        var emojiMap: MutableMap<String, Int> = HashMap()
 
-        void onLongClick(View v);// 长按textView
+        @JvmStatic
+        @Synchronized
+        fun putAllEmojiMap(map: Map<String, Int>?) {
+            emojiMap.putAll(map!!)
+        }
 
-        void onTextSelected(CharSequence content);// 选中文本回调
+        @JvmStatic
+        @Synchronized
+        fun putEmojiMap(emojiKey: String, @DrawableRes drawableRes: Int) {
+            emojiMap[emojiKey] = drawableRes
+        }
 
-        void onDismiss();// 解除弹窗回调
+        /**
+         * 文字转化成图片背景
+         *
+         * @param context       Context
+         * @param stringBuilder SpannableStringBuilder text
+         * @param content       Target content
+         */
+        fun replaceText2Emoji(
+            context: Context?, stringBuilder: SpannableStringBuilder, content: String
+        ) {
+            if (emojiMap.isEmpty()) {
+                return
+            }
+            for ((key, drawableRes) in emojiMap) {
+                val matcher = Pattern.compile(key).matcher(content)
+                while (matcher.find()) {
+                    val start = matcher.start()
+                    val end = matcher.end()
+                    val drawable = ContextCompat.getDrawable(context!!, drawableRes)
+                    drawable!!.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
+                    val span = SelectImageSpan(
+                        drawable, Color.TRANSPARENT, DynamicDrawableSpan.ALIGN_CENTER
+                    )
+                    stringBuilder.setSpan(span, start, end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE)
+                }
+            }
+        }
 
-        void onClickUrl(String url);// 点击文本里的url回调
+        // util
+        fun getPreciseOffset(textView: TextView, x: Int, y: Int): Int {
+            val layout = textView.layout
+            return if (layout != null) {
+                val topVisibleLine = layout.getLineForVertical(y)
+                val offset = layout.getOffsetForHorizontal(topVisibleLine, x.toFloat())
+                val offsetX = layout.getPrimaryHorizontal(offset).toInt()
+                if (offsetX > x) {
+                    layout.getOffsetToLeftOf(offset)
+                } else {
+                    offset
+                }
+            } else {
+                -1
+            }
+        }
 
-        void onSelectAllShowCustomPop();// 全选显示自定义弹窗回调
+        fun getHysteresisOffset(textView: TextView, x: Int, y: Int, previousOffset: Int): Int {
+            var previousOffsetCopy = previousOffset
+            val layout = textView.layout ?: return -1
+            var line = layout.getLineForVertical(y)
 
-        void onReset();// 重置回调
+            // The "HACK BLOCK"S in this function is required because of how Android Layout for
+            // TextView works - if 'offset' equals to the last character of a line, then
+            //
+            // * getLineForOffset(offset) will result the NEXT line
+            // * getPrimaryHorizontal(offset) will return 0 because the next insertion point is on the next line
+            // * getOffsetForHorizontal(line, x) will not return the last offset of a line no matter where x is
+            // These are highly undesired and is worked around with the HACK BLOCK
+            //
+            // @see Moon+ Reader/Color Note - see how it can't select the last character of a line unless you move
+            // the cursor to the beginning of the next line.
+            //
+            ////////////////////HACK BLOCK////////////////////////////////////////////////////
+            if (isEndOfLineOffset(
+                    layout, previousOffsetCopy
+                )
+            ) { // we have to minus one from the offset so that the code below to find
+                // the previous line can work correctly.
+                val left = layout.getPrimaryHorizontal(previousOffsetCopy - 1).toInt()
+                val right = layout.getLineRight(line).toInt()
+                val threshold = (right - left) / 2 // half the width of the last character
+                if (x > right - threshold) {
+                    previousOffsetCopy -= 1
+                }
+            } ///////////////////////////////////////////////////////////////////////////////////
+            val previousLine = layout.getLineForOffset(previousOffsetCopy)
+            val previousLineTop = layout.getLineTop(previousLine)
+            val previousLineBottom = layout.getLineBottom(previousLine)
+            val hysteresisThreshold = (previousLineBottom - previousLineTop) / 2
 
-        void onDismissCustomPop();// 解除自定义弹窗回调
+            // If new line is just before or after previous line and y position is less than
+            // hysteresisThreshold away from previous line, keep cursor on previous line.
+            if (line == previousLine + 1 && y - previousLineBottom < hysteresisThreshold || line == previousLine - 1 && (previousLineTop - y) < hysteresisThreshold) {
+                line = previousLine
+            }
+            var offset = layout.getOffsetForHorizontal(line, x.toFloat())
 
-        void onScrolling();// 正在滚动回调
+            // This allow the user to select the last character of a line without moving the
+            // cursor to the next line. (As Layout.getOffsetForHorizontal does not return the
+            // offset of the last character of the specified line)
+            //
+            // But this function will probably get called again immediately, must decrement the offset
+            // by 1 to compensate for the change made below. (see previous HACK BLOCK)
+            /////////////////////HACK BLOCK///////////////////////////////////////////////////
+            if (offset < textView.text.length - 1) {
+                if (isEndOfLineOffset(layout, offset + 1)) {
+                    val left = layout.getPrimaryHorizontal(offset).toInt()
+                    val right = layout.getLineRight(line).toInt()
+                    val threshold = (right - left) / 2 // half the width of the last character
+                    if (x > right - threshold) {
+                        offset += 1
+                    }
+                }
+            } //////////////////////////////////////////////////////////////////////////////////
+            return offset
+        }
+
+        private fun isEndOfLineOffset(layout: Layout, offset: Int): Boolean {
+            return offset > 0 && layout.getLineForOffset(offset) == layout.getLineForOffset(offset - 1) + 1
+        }
+
+        @JvmStatic
+        val displayWidth: Int
+            get() = Resources.getSystem().displayMetrics.widthPixels
+
+        @JvmStatic
+        val displayHeight: Int
+            get() = Resources.getSystem().displayMetrics.heightPixels
+
+        fun dp2px(dpValue: Float): Int {
+            return (dpValue * Resources.getSystem().displayMetrics.density + 0.5f).toInt()
+        }
+
+        /**
+         * 设置宽高
+         *
+         * @param v
+         * @param w
+         * @param h
+         */
+        @JvmStatic
+        fun setWidthHeight(v: View, w: Int, h: Int) {
+            val params = v.layoutParams
+            params.width = w
+            params.height = h
+            v.layoutParams = params
+        }
+
+        /**
+         * 通知栏的高度
+         */
+        private var STATUS_HEIGHT = 0
+
+        /**
+         * 获取通知栏的高度
+         */
+        @JvmStatic
+        val statusHeight: Int
+            get() {
+                if (0 != STATUS_HEIGHT) {
+                    return STATUS_HEIGHT
+                }
+                val resid =
+                    Resources.getSystem().getIdentifier("status_bar_height", "dimen", "android")
+                if (resid > 0) {
+                    STATUS_HEIGHT = Resources.getSystem().getDimensionPixelSize(resid)
+                    return STATUS_HEIGHT
+                }
+                return -1
+            }
+
+        /**
+         * 反射获取对象属性值
+         */
+        fun getFieldValue(obj: Any?, fieldName: String?): Any? {
+            if (obj == null || TextUtils.isEmpty(fieldName)) {
+                return null
+            }
+            var clazz: Class<*> = obj.javaClass
+            while (clazz != Any::class.java) {
+                try {
+                    val field = clazz.getDeclaredField(fieldName!!)
+                    field.isAccessible = true
+                    return field[obj]
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                clazz = clazz.superclass
+            }
+            return null
+        }
+
+        /**
+         * 判断是否为emoji表情符
+         *
+         * @param c 字符
+         * @return 是否为emoji字符
+         */
+        fun isEmojiText(c: Char): Boolean {
+            return !(c.code == 0x0 || c.code == 0x9 || c.code == 0xA || c.code == 0xD || c.code in 0x20..0xD7FF || c.code in 0xE000..0xFFFD || c.code in 0x100000..0x10FFFF)
+        }
+
+        /**
+         * 利用反射检测文本是否是ImageSpan文本
+         */
+        private fun isImageSpanText(mSpannable: Spannable): Boolean {
+            if (TextUtils.isEmpty(mSpannable)) {
+                return false
+            }
+            try {
+                val mSpans = getFieldValue(mSpannable, "mSpans") as Array<*>?
+                if (null != mSpans) {
+                    for (mSpan in mSpans) {
+                        if (mSpan is SelectImageSpan) {
+                            return true
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return false
+        }
+
+        /**
+         * 匹配Image
+         *
+         * @param content Target content
+         */
+        fun matchImageSpan(content: String): Boolean {
+            if (emojiMap.isEmpty()) {
+                return false
+            }
+            for ((key) in emojiMap) {
+                val matcher = Pattern.compile(key).matcher(content)
+                if (matcher.find()) {
+                    return true
+                }
+            }
+            return false
+        }
     }
 
-    public static class Builder {
-        private TextView mTextView;
-        private int mCursorHandleColor = 0xFF1379D6;
-        private int mSelectedColor = 0xFFAFE1F4;
-        private float mCursorHandleSizeInDp = 24;
-        private boolean mSelectAll = true;
-        private boolean mSelectedAllNoPop = false;
-        private boolean mScrollShow = true;
-        private boolean mMagnifierShow = true;
-        private int mPopSpanCount = 5;
-        private int mPopBgResource = 0;
-        private int mPopArrowImg = 0;
-        private List<Pair<Integer, String>> itemTextList = new LinkedList<>();
-        private List<onSeparateItemClickListener> itemListenerList = new LinkedList<>();
+    interface OnSelectListener {
+        fun onClick(v: View?) // 点击textView
+        fun onLongClick(v: View?) // 长按textView
+        fun onTextSelected(content: CharSequence?) // 选中文本回调
+        fun onDismiss() // 解除弹窗回调
+        fun onClickUrl(url: String?) // 点击文本里的url回调
+        fun onSelectAllShowCustomPop() // 全选显示自定义弹窗回调
+        fun onReset() // 重置回调
+        fun onDismissCustomPop() // 解除自定义弹窗回调
+        fun onScrolling() // 正在滚动回调
+    }
 
-        public Builder(TextView textView) {
-            mTextView = textView;
-        }
+    class Builder(val mTextView: TextView) {
+        var mCursorHandleColor = -0xec862a
+        var mSelectedColor = -0x501e0c
+        var mCursorHandleSizeInDp = 24f
+        var mSelectAll = true
+        var mSelectedAllNoPop = false
+        var mScrollShow = true
+        var mMagnifierShow = true
+        var mPopSpanCount = 5
+        var mPopBgResource = 0
+        var mSelectTextLength = DEFAULT_SELECTION_LENGTH
+        var mPopDelay = DEFAULT_SHOW_DURATION
+        var mPopArrowImg = 0
+        val itemTextList: MutableList<Pair<Int, String>> = LinkedList()
+        val itemListenerList: MutableList<onSeparateItemClickListener> = LinkedList()
 
         /**
          * 选择游标颜色
          */
-        public Builder setCursorHandleColor(@ColorInt int cursorHandleColor) {
-            mCursorHandleColor = cursorHandleColor;
-            return this;
+        fun setCursorHandleColor(@ColorInt cursorHandleColor: Int): Builder {
+            mCursorHandleColor = cursorHandleColor
+            return this
         }
 
         /**
          * 选择游标大小
          */
-        public Builder setCursorHandleSizeInDp(float cursorHandleSizeInDp) {
-            mCursorHandleSizeInDp = cursorHandleSizeInDp;
-            return this;
+        fun setCursorHandleSizeInDp(cursorHandleSizeInDp: Float): Builder {
+            mCursorHandleSizeInDp = cursorHandleSizeInDp
+            return this
         }
 
         /**
          * 选中文本的颜色
          */
-        public Builder setSelectedColor(@ColorInt int selectedBgColor) {
-            mSelectedColor = selectedBgColor;
-            return this;
+        fun setSelectedColor(@ColorInt selectedBgColor: Int): Builder {
+            mSelectedColor = selectedBgColor
+            return this
         }
 
         /**
          * 全选
          */
-        public Builder setSelectAll(boolean selectAll) {
-            mSelectAll = selectAll;
-            return this;
+        fun setSelectAll(selectAll: Boolean): Builder {
+            mSelectAll = selectAll
+            return this
         }
 
         /**
          * 已经全选无弹窗
          */
-        public Builder setSelectedAllNoPop(boolean selectedAllNoPop) {
-            mSelectedAllNoPop = selectedAllNoPop;
-            return this;
+        fun setSelectedAllNoPop(selectedAllNoPop: Boolean): Builder {
+            mSelectedAllNoPop = selectedAllNoPop
+            return this
         }
 
         /**
          * 滑动依然显示弹窗
          */
-        public Builder setScrollShow(boolean scrollShow) {
-            mScrollShow = scrollShow;
-            return this;
+        fun setScrollShow(scrollShow: Boolean): Builder {
+            mScrollShow = scrollShow
+            return this
         }
 
         /**
          * 显示放大镜
          */
-        public Builder setMagnifierShow(boolean magnifierShow) {
-            mMagnifierShow = magnifierShow;
-            return this;
+        fun setMagnifierShow(magnifierShow: Boolean): Builder {
+            mMagnifierShow = magnifierShow
+            return this
         }
 
         /**
          * 弹窗每行个数
          */
-        public Builder setPopSpanCount(int popSpanCount) {
-            mPopSpanCount = popSpanCount;
-            return this;
+        fun setPopSpanCount(popSpanCount: Int): Builder {
+            mPopSpanCount = popSpanCount
+            return this
         }
 
         /**
          * 弹窗背景颜色、弹窗箭头
          */
-        public Builder setPopStyle(int popBgResource, int popArrowImg) {
-            mPopBgResource = popBgResource;
-            mPopArrowImg = popArrowImg;
-            return this;
+        fun setPopStyle(popBgResource: Int, popArrowImg: Int): Builder {
+            mPopBgResource = popBgResource
+            mPopArrowImg = popArrowImg
+            return this
         }
 
-        public Builder addItem(@DrawableRes int drawableId, @StringRes int textResId, onSeparateItemClickListener listener) {
-            itemTextList.add(new Pair<>(drawableId, mTextView.getContext().getResources().getString(textResId)));
-            itemListenerList.add(listener);
-            return this;
+        /**
+         * 选择选择个数
+         */
+        fun setSelectTextLength(selectTextLength: Int): Builder {
+            mSelectTextLength = selectTextLength
+            return this
         }
 
-        public Builder addItem(@DrawableRes int drawableId, String itemText, onSeparateItemClickListener listener) {
-            itemTextList.add(new Pair<>(drawableId, itemText));
-            itemListenerList.add(listener);
-            return this;
+        /**
+         * 弹窗延迟
+         */
+        fun setPopDelay(popDelay: Int): Builder {
+            mPopDelay = popDelay
+            return this
         }
 
-        public SelectTextHelper build() {
-            return new SelectTextHelper(this);
+        fun addItem(
+            @DrawableRes drawableId: Int,
+            @StringRes textResId: Int,
+            listener: onSeparateItemClickListener
+        ): Builder {
+            itemTextList.add(Pair(drawableId, mTextView.context.resources.getString(textResId)))
+            itemListenerList.add(listener)
+            return this
         }
 
-        public interface onSeparateItemClickListener {
-            void onClick();
+        fun addItem(
+            @DrawableRes drawableId: Int, itemText: String, listener: onSeparateItemClickListener
+        ): Builder {
+            itemTextList.add(Pair(drawableId, itemText))
+            itemListenerList.add(listener)
+            return this
         }
-    }
 
-    public SelectTextHelper(Builder builder) {
-        mTextView = builder.mTextView;
-        mContext = mTextView.getContext();
-        mSelectedColor = builder.mSelectedColor;
-        mCursorHandleColor = builder.mCursorHandleColor;
-        mSelectAll = builder.mSelectAll;
-        mScrollShow = builder.mScrollShow;
-        mMagnifierShow = builder.mMagnifierShow;
-        mPopSpanCount = builder.mPopSpanCount;
-        mPopBgResource = builder.mPopBgResource;
-        mPopArrowImg = builder.mPopArrowImg;
-        mSelectedAllNoPop = builder.mSelectedAllNoPop;
-        itemTextList = builder.itemTextList;
-        itemListenerList = builder.itemListenerList;
-        mCursorHandleSize = dp2px(builder.mCursorHandleSizeInDp);
-        init();
+        fun addItem(@StringRes textResId: Int, listener: onSeparateItemClickListener): Builder {
+            itemTextList.add(Pair(0, mTextView.context.resources.getString(textResId)))
+            itemListenerList.add(listener)
+            return this
+        }
+
+        fun addItem(itemText: String, listener: onSeparateItemClickListener): Builder {
+            itemTextList.add(Pair(0, itemText))
+            itemListenerList.add(listener)
+            return this
+        }
+
+        fun build(): SelectTextHelper {
+            return SelectTextHelper(this)
+        }
+
+        interface onSeparateItemClickListener {
+            fun onClick()
+        }
     }
 
     /**
      * 重置弹窗
      */
-    public void reset() {
-        hideSelectView();
-        resetSelectionInfo();
-        // 重置弹窗回调
+    fun reset() {
+        hideSelectView()
+        resetSelectionInfo() // 重置弹窗回调
         if (mSelectListener != null) {
-            mSelectListener.onReset();
+            mSelectListener!!.onReset()
         }
     }
 
     /**
      * 操作弹窗是否显示中
      */
-    public boolean isPopShowing() {
-        if (null != mOperateWindow) {
-            return mOperateWindow.isShowing();
-        }
-        return false;
-    }
+    val isPopShowing: Boolean
+        get() = if (null != mOperateWindow) {
+            mOperateWindow!!.isShowing
+        } else false
 
     /**
      * 销毁操作弹窗
      */
-    public void dismissOperateWindow() {
+    fun dismissOperateWindow() {
         if (null != mOperateWindow) {
-            mOperateWindow.dismiss();
+            mOperateWindow!!.dismiss()
         }
     }
 
     /**
      * 选择文本监听
      */
-    public void setSelectListener(OnSelectListener selectListener) {
-        mSelectListener = selectListener;
+    fun setSelectListener(selectListener: OnSelectListener?) {
+        mSelectListener = selectListener
     }
 
     /**
      * 销毁
      */
-    public void destroy() {
-        mTextView.getViewTreeObserver().removeOnScrollChangedListener(mOnScrollChangedListener);
-        mTextView.getViewTreeObserver().removeOnPreDrawListener(mOnPreDrawListener);
-        mTextView.getRootView().setOnTouchListener(null);
-        reset();
-        mStartHandle = null;
-        mEndHandle = null;
-        mOperateWindow = null;
+    fun destroy() {
+        mTextView.viewTreeObserver.removeOnScrollChangedListener(mOnScrollChangedListener)
+        mTextView.viewTreeObserver.removeOnPreDrawListener(mOnPreDrawListener)
+        mTextView.rootView.setOnTouchListener(null)
+        reset()
+        mStartHandle = null
+        mEndHandle = null
+        mOperateWindow = null
     }
 
     /**
      * 全选
      */
-    public void selectAll() {
-        hideSelectView();
-        selectText(0, mTextView.getText().length());
-        isHide = false;
-        showCursorHandle(mStartHandle);
-        showCursorHandle(mEndHandle);
-        showOperateWindow();
+    fun selectAll() {
+        hideSelectView()
+        selectText(0, mTextView.text.length)
+        isHide = false
+        showCursorHandle(mStartHandle)
+        showCursorHandle(mEndHandle)
+        showOperateWindow()
     }
 
     /**
      * public end
      */
 
-    private void init() {
-        SpannableStringBuilder spanStr = new SpannableStringBuilder(mTextView.getText().toString());
-        replaceText2Emoji(mContext, spanStr, mTextView.getText().toString());
+    @SuppressLint("ClickableViewAccessibility")
+    private fun init() {
+        val spanStr = SpannableStringBuilder(mTextView.text.toString())
+        replaceText2Emoji(mContext, spanStr, mTextView.text.toString())
 
         // 去除超链接点击背景色 https://github.com/ITxiaoguang/SelectTextHelper/issues/2
-        mTextView.setHighlightColor(Color.TRANSPARENT);
-        mTextView.setText(spanStr, TextView.BufferType.SPANNABLE);
-
-        mTextView.setOnTouchListener((v, event) -> {
-            mTouchX = (int) event.getX();
-            mTouchY = (int) event.getY();
-            return false;
-        });
-
-        mTextView.setOnClickListener(v -> {
+        mTextView.highlightColor = Color.TRANSPARENT
+        mTextView.setText(spanStr, TextView.BufferType.SPANNABLE)
+        mTextView.setOnTouchListener { _: View?, event: MotionEvent ->
+            mTouchX = event.x.toInt()
+            mTouchY = event.y.toInt()
+            false
+        }
+        mTextView.setOnClickListener {
             if (usedClickListener) {
-                usedClickListener = false;
-                return;
+                usedClickListener = false
+                return@setOnClickListener
             }
-            if (null != mSelectListener
-                    && (null == mOperateWindow || !mOperateWindow.isShowing())) {
-                mSelectListener.onDismiss();
+            if (null != mSelectListener && (null == mOperateWindow || !mOperateWindow!!.isShowing)) {
+                mSelectListener!!.onDismiss()
             }
-            reset();
+            reset()
             if (null != mSelectListener) {
-                mSelectListener.onClick(mTextView);
+                mSelectListener!!.onClick(mTextView)
             }
-        });
-
-        mTextView.setOnLongClickListener(v -> {
-
-            mTextView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-                @Override
-                public void onViewAttachedToWindow(View v) {
+        }
+        mTextView.setOnLongClickListener {
+            mTextView.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) {}
+                override fun onViewDetachedFromWindow(v: View) {
+                    destroy()
                 }
-
-                @Override
-                public void onViewDetachedFromWindow(View v) {
-                    destroy();
+            })
+            mOnPreDrawListener = ViewTreeObserver.OnPreDrawListener {
+                if (isHideWhenScroll) {
+                    isHideWhenScroll = false
+                    postShowSelectView(mPopDelay)
+                } // 拿textView的x坐标
+                if (0 == mTextViewMarginStart) {
+                    val location = IntArray(2)
+                    mTextView.getLocationInWindow(location)
+                    mTextViewMarginStart = location[0]
                 }
-            });
-
-            mOnPreDrawListener = new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    if (isHideWhenScroll) {
-                        isHideWhenScroll = false;
-                        postShowSelectView(DEFAULT_SHOW_DURATION);
-                    }
-                    // 拿textView的x坐标
-                    if (0 == mTextViewMarginStart) {
-                        int[] location = new int[2];
-                        mTextView.getLocationInWindow(location);
-                        mTextViewMarginStart = location[0];
-                    }
-                    return true;
-                }
-            };
-            mTextView.getViewTreeObserver().addOnPreDrawListener(mOnPreDrawListener);
+                return@OnPreDrawListener true
+            }
+            mTextView.viewTreeObserver.addOnPreDrawListener(mOnPreDrawListener)
 
             // 根布局监听
-            mRootTouchListener = new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    reset();
-                    mTextView.getRootView().setOnTouchListener(null);
-                    return false;
-                }
-            };
-            mTextView.getRootView().setOnTouchListener(mRootTouchListener);
-
-            mOnScrollChangedListener = new ViewTreeObserver.OnScrollChangedListener() {
-                @Override
-                public void onScrollChanged() {
-                    if (mScrollShow) {
-                        if (!isHideWhenScroll && !isHide) {
-                            isHideWhenScroll = true;
-                            if (mOperateWindow != null) {
-                                mOperateWindow.dismiss();
-                            }
-                            if (mStartHandle != null) {
-                                mStartHandle.dismiss();
-                            }
-                            if (mEndHandle != null) {
-                                mEndHandle.dismiss();
-                            }
-                        }
-                        if (null != mSelectListener) {
-                            mSelectListener.onScrolling();
-                        }
-                    } else {
-                        reset();
-                    }
-                }
-            };
-            mTextView.getViewTreeObserver().addOnScrollChangedListener(mOnScrollChangedListener);
-
-            if (null == mOperateWindow) {
-                mOperateWindow = new OperateWindow(mContext);
+            mRootTouchListener = OnTouchListener { _, _ ->
+                reset()
+                mTextView.rootView.setOnTouchListener(null)
+                return@OnTouchListener false
             }
-
+            mTextView.rootView.setOnTouchListener(mRootTouchListener)
+            mOnScrollChangedListener = OnScrollChangedListener {
+                if (mScrollShow) {
+                    if (!isHideWhenScroll && !isHide) {
+                        isHideWhenScroll = true
+                        if (mOperateWindow != null) {
+                            mOperateWindow!!.dismiss()
+                        }
+                        if (mStartHandle != null) {
+                            mStartHandle!!.dismiss()
+                        }
+                        if (mEndHandle != null) {
+                            mEndHandle!!.dismiss()
+                        }
+                    }
+                    if (null != mSelectListener) {
+                        mSelectListener!!.onScrolling()
+                    }
+                } else {
+                    reset()
+                }
+            }
+            mTextView.viewTreeObserver.addOnScrollChangedListener(mOnScrollChangedListener)
+            if (null == mOperateWindow) {
+                mOperateWindow = OperateWindow(mContext)
+            }
             if (mSelectAll) {
-                showAllView();
+                showAllView()
             } else {
-                showSelectView(mTouchX, mTouchY);
+                showSelectView(mTouchX, mTouchY)
             }
             if (null != mSelectListener) {
-                mSelectListener.onLongClick(mTextView);
+                mSelectListener!!.onLongClick(mTextView)
             }
-            return true;
-        });
-        // 此setMovementMethod可被修改
-        mTextView.setMovementMethod(new LinkMovementMethodInterceptor());
+            true
+        } // 此setMovementMethod可被修改
+        mTextView.movementMethod = LinkMovementMethodInterceptor()
     }
 
-    private void postShowSelectView(int duration) {
-        mTextView.removeCallbacks(mShowSelectViewRunnable);
+    private fun postShowSelectView(duration: Int) {
+        mTextView.removeCallbacks(mShowSelectViewRunnable)
         if (duration <= 0) {
-            mShowSelectViewRunnable.run();
+            mShowSelectViewRunnable.run()
         } else {
-            mTextView.postDelayed(mShowSelectViewRunnable, duration);
+            mTextView.postDelayed(mShowSelectViewRunnable, duration.toLong())
         }
     }
 
-    private final Runnable mShowSelectViewRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (isHide) return;
-            if (null != mOperateWindow) {
-                showOperateWindow();
-            }
-            if (mStartHandle != null) {
-                showCursorHandle(mStartHandle);
-            }
-            if (mEndHandle != null) {
-                showCursorHandle(mEndHandle);
-            }
+    private val mShowSelectViewRunnable = Runnable {
+        if (isHide) return@Runnable
+        if (null != mOperateWindow) {
+            showOperateWindow()
         }
-    };
-
-    private void hideSelectView() {
-        isHide = true;
-        usedClickListener = false;
         if (mStartHandle != null) {
-            mStartHandle.dismiss();
+            showCursorHandle(mStartHandle)
         }
         if (mEndHandle != null) {
-            mEndHandle.dismiss();
-        }
-        if (mOperateWindow != null) {
-            mOperateWindow.dismiss();
+            showCursorHandle(mEndHandle)
         }
     }
 
-    private void resetSelectionInfo() {
-        resetEmojiBackground();
-        mSelectionInfo.mSelectionContent = null;
+    private fun hideSelectView() {
+        isHide = true
+        usedClickListener = false
+        if (mStartHandle != null) {
+            mStartHandle!!.dismiss()
+        }
+        if (mEndHandle != null) {
+            mEndHandle!!.dismiss()
+        }
+        if (mOperateWindow != null) {
+            mOperateWindow!!.dismiss()
+        }
+    }
+
+    private fun resetSelectionInfo() {
+        resetEmojiBackground()
+        mSelectionInfo.mSelectionContent = null
         if (mSpannable != null && mSpan != null) {
-            mSpannable.removeSpan(mSpan);
-            mSpan = null;
+            mSpannable!!.removeSpan(mSpan)
+            mSpan = null
         }
     }
 
@@ -484,25 +713,24 @@ public class SelectTextHelper {
      * @param x 长按时的手指的x坐标
      * @param y 长按时的手指的y坐标
      */
-    private void showSelectView(int x, int y) {
-        reset();
-        isHide = false;
-        if (mStartHandle == null) mStartHandle = new CursorHandle(true);
-        if (mEndHandle == null) mEndHandle = new CursorHandle(false);
-
-        int startOffset = getPreciseOffset(mTextView, x, y);
-        int endOffset = startOffset + DEFAULT_SELECTION_LENGTH;
-        if (mTextView.getText() instanceof Spannable) {
-            mSpannable = (Spannable) mTextView.getText();
+    private fun showSelectView(x: Int, y: Int) {
+        reset()
+        isHide = false
+        if (mStartHandle == null) mStartHandle = CursorHandle(true)
+        if (mEndHandle == null) mEndHandle = CursorHandle(false)
+        val startOffset = getPreciseOffset(mTextView, x, y)
+        var endOffset = startOffset + mSelectTextLength
+        if (mTextView.text is Spannable) {
+            mSpannable = mTextView.text as Spannable
         }
-        if (mSpannable == null || endOffset - 1 >= mTextView.getText().length()) {
-            endOffset = mTextView.getText().length();
+        if (mSpannable == null || endOffset - 1 >= mTextView.text.length) {
+            endOffset = mTextView.text.length
         }
-        endOffset = handleEndOffset(startOffset, endOffset);
-        selectText(startOffset, endOffset);
-        showCursorHandle(mStartHandle);
-        showCursorHandle(mEndHandle);
-        showOperateWindow();
+        endOffset = changeEndOffset(startOffset, endOffset)
+        selectText(startOffset, endOffset)
+        showCursorHandle(mStartHandle)
+        showCursorHandle(mEndHandle)
+        showOperateWindow()
     }
 
     /**
@@ -514,45 +742,44 @@ public class SelectTextHelper {
      * @param endOffset   结束文字坐标
      * @return endOffset
      */
-    private int handleEndOffset(int startOffset, int endOffset) {
-        Spannable selectText = (Spannable) mSpannable.subSequence(startOffset, endOffset);
-        // 是否ImageSpan文本
-        if (isImageSpanText(selectText)) {
-            // 是否匹配Image
+    private fun changeEndOffset(startOffset: Int, endOffset: Int): Int {
+        var endOffsetCopy = endOffset
+        var selectText =
+            mSpannable!!.subSequence(startOffset, endOffsetCopy) as Spannable // 是否ImageSpan文本
+        if (isImageSpanText(selectText)) { // 是否匹配Image
             while (!matchImageSpan(selectText.toString())) {
-                endOffset++;
-                selectText = (Spannable) mSpannable.subSequence(startOffset, endOffset);
+                endOffsetCopy++
+                selectText = mSpannable!!.subSequence(startOffset, endOffsetCopy) as Spannable
             }
-        }
-        // 选中的文字倒数第二个是文字 且 倒数第一个字符是文字emoji
+        } // 选中的文字倒数第二个是文字 且 倒数第一个字符是文字emoji
         // 则去除最后的文字emoji字符
-        String selectTextString = selectText.toString();
-        if (selectTextString.length() > 1) {
-            if (!isEmojiText(selectTextString.charAt(selectTextString.length() - 2))
-                    && isEmojiText(selectTextString.charAt(selectTextString.length() - 1))) {
-                endOffset--;
+        val selectTextString = selectText.toString()
+        if (selectTextString.length > 1) {
+            if (!isEmojiText(selectTextString[selectTextString.length - 2]) && isEmojiText(
+                    selectTextString[selectTextString.length - 1]
+                )
+            ) {
+                endOffsetCopy--
             }
         }
-        return endOffset;
+        return endOffsetCopy
     }
 
     /**
      * 显示操作弹窗
      * 可能多次调用
      */
-    private void showOperateWindow() {
+    private fun showOperateWindow() {
         if (null == mOperateWindow) {
-            mOperateWindow = new OperateWindow(mContext);
-        }
-        // Log.e("SelectableTextHelper", " showOperateWindow ");
-        // 开启已经全选无弹窗
-        if (mSelectedAllNoPop && mSelectionInfo.mSelectionContent.equals(mTextView.getText().toString())) {
-            mOperateWindow.dismiss();
+            mOperateWindow = OperateWindow(mContext)
+        } // 开启已经全选无弹窗
+        if (mSelectedAllNoPop && mSelectionInfo.mSelectionContent == mTextView.text.toString()) {
+            mOperateWindow!!.dismiss()
             if (mSelectListener != null) {
-                mSelectListener.onSelectAllShowCustomPop();
+                mSelectListener!!.onSelectAllShowCustomPop()
             }
         } else {
-            mOperateWindow.show();
+            mOperateWindow!!.show()
         }
     }
 
@@ -560,29 +787,28 @@ public class SelectTextHelper {
      * 全选
      * Select all
      */
-    private void showAllView() {
-        reset();
-        isHide = false;
-        if (mStartHandle == null) mStartHandle = new CursorHandle(true);
-        if (mEndHandle == null) mEndHandle = new CursorHandle(false);
-
-        if (mTextView.getText() instanceof Spannable) {
-            mSpannable = (Spannable) mTextView.getText();
+    private fun showAllView() {
+        reset()
+        isHide = false
+        if (mStartHandle == null) mStartHandle = CursorHandle(true)
+        if (mEndHandle == null) mEndHandle = CursorHandle(false)
+        if (mTextView.text is Spannable) {
+            mSpannable = mTextView.text as Spannable
         }
         if (mSpannable == null) {
-            return;
+            return
         }
-        selectText(0, mTextView.getText().length());
-        showCursorHandle(mStartHandle);
-        showCursorHandle(mEndHandle);
-        showOperateWindow();
+        selectText(0, mTextView.text.length)
+        showCursorHandle(mStartHandle)
+        showCursorHandle(mEndHandle)
+        showOperateWindow()
     }
 
-    private void showCursorHandle(CursorHandle cursorHandle) {
-        Layout layout = mTextView.getLayout();
-        int offset = cursorHandle.isLeft ? mSelectionInfo.mStart : mSelectionInfo.mEnd;
-        int x = (int) layout.getPrimaryHorizontal(offset);
-        int y = layout.getLineBottom(layout.getLineForOffset(offset));
+    private fun showCursorHandle(cursorHandle: CursorHandle?) {
+        val layout = mTextView.layout
+        val offset = if (cursorHandle!!.isLeft) mSelectionInfo.mStart else mSelectionInfo.mEnd
+        var x = layout.getPrimaryHorizontal(offset).toInt()
+        var y = layout.getLineBottom(layout.getLineForOffset(offset))
 
         // 右游标
         // mSelectionInfo.mEnd != 0 不是第一位
@@ -590,87 +816,62 @@ public class SelectTextHelper {
         // 把右游标水平坐标定位在减去一个字的线条右侧
         // 把右游标底部线坐标定位在上一行
         if (!cursorHandle.isLeft && mSelectionInfo.mEnd != 0 && x == 0) {
-            x = (int) layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
-            y = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
+            x = layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1)).toInt()
+            y = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
         }
-        cursorHandle.show(x, y);
+        cursorHandle.show(x, y)
     }
 
-    private void selectText(int startPos, int endPos) {
+    private fun selectText(startPos: Int, endPos: Int) {
         if (startPos != -1) {
-            mSelectionInfo.mStart = startPos;
+            mSelectionInfo.mStart = startPos
         }
         if (endPos != -1) {
-            mSelectionInfo.mEnd = endPos;
+            mSelectionInfo.mEnd = endPos
         }
         if (mSelectionInfo.mStart > mSelectionInfo.mEnd) {
-            int temp = mSelectionInfo.mStart;
-            mSelectionInfo.mStart = mSelectionInfo.mEnd;
-            mSelectionInfo.mEnd = temp;
+            val temp = mSelectionInfo.mStart
+            mSelectionInfo.mStart = mSelectionInfo.mEnd
+            mSelectionInfo.mEnd = temp
         }
-
         if (mSpannable != null) {
             if (mSpan == null) {
-                mSpan = new BackgroundColorSpan(mSelectedColor);
+                mSpan = BackgroundColorSpan(mSelectedColor)
             }
-//            Log.e("SelectableTextHelper", "start: " + mSelectionInfo.mStart + "   end: " + mSelectionInfo.mEnd);
-            mSelectionInfo.mSelectionContent = mSpannable.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd).toString();
-            mSpannable.setSpan(mSpan, mSelectionInfo.mStart, mSelectionInfo.mEnd, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+            mSelectionInfo.mSelectionContent =
+                mSpannable!!.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd).toString()
+            mSpannable!!.setSpan(
+                mSpan, mSelectionInfo.mStart, mSelectionInfo.mEnd, Spanned.SPAN_INCLUSIVE_EXCLUSIVE
+            )
             if (mSelectListener != null) {
-                mSelectListener.onTextSelected(mSelectionInfo.mSelectionContent);
+                mSelectListener!!.onTextSelected(mSelectionInfo.mSelectionContent)
             }
 
             // 设置图片表情选中背景
-            setEmojiBackground();
+            setEmojiBackground()
         }
-    }
-
-    public static Map<String, Integer> emojiMap = new HashMap<>();
-
-    /**
-     * 文字转化成图片背景
-     *
-     * @param context       Context
-     * @param stringBuilder SpannableStringBuilder text
-     * @param content       Target content
-     */
-    public static void replaceText2Emoji(Context context,
-                                         SpannableStringBuilder stringBuilder,
-                                         String content) {
-        if (emojiMap.isEmpty()) {
-            return;
-        }
-        for (Map.Entry<String, Integer> entry : emojiMap.entrySet()) {
-            Matcher matcher = Pattern.compile(entry.getKey()).matcher(content);
-            while (matcher.find()) {
-                int start = matcher.start();
-                int end = matcher.end();
-                int drawableRes = entry.getValue();
-
-                Drawable drawable = ContextCompat.getDrawable(context, drawableRes);
-                drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-                SelectImageSpan span = new SelectImageSpan(drawable, Color.TRANSPARENT, DynamicDrawableSpan.ALIGN_CENTER);
-
-                stringBuilder.setSpan(span, start, end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
-            }
-        }
-
     }
 
     /**
      * 设置图片表情选中背景
      */
-    private void setEmojiBackground() {
+    private fun setEmojiBackground() {
         if (emojiMap.isEmpty()) {
-            return;
+            return
         }
 
         // 前部 透明背景
-        setEmojiBackground((Spannable) mSpannable.subSequence(0, mSelectionInfo.mStart), Color.TRANSPARENT);
-        // 中间 选择背景
-        setEmojiBackground((Spannable) mSpannable.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd), mSelectedColor);
-        // 尾部 透明背景
-        setEmojiBackground((Spannable) mSpannable.subSequence(mSelectionInfo.mEnd, mSpannable.length()), Color.TRANSPARENT);
+        setEmojiBackground(
+            mSpannable!!.subSequence(0, mSelectionInfo.mStart) as Spannable, Color.TRANSPARENT
+        ) // 中间 选择背景
+        setEmojiBackground(
+            mSpannable!!.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd) as Spannable,
+            mSelectedColor
+        ) // 尾部 透明背景
+        setEmojiBackground(
+            mSpannable!!.subSequence(mSelectionInfo.mEnd, mSpannable!!.length) as Spannable,
+            Color.TRANSPARENT
+        )
     }
 
     /**
@@ -679,49 +880,28 @@ public class SelectTextHelper {
      * @param mSpannable Spannable
      * @param bgColor    background
      */
-    private void setEmojiBackground(Spannable mSpannable, @ColorInt int bgColor) {
+    private fun setEmojiBackground(mSpannable: Spannable, @ColorInt bgColor: Int) {
         if (TextUtils.isEmpty(mSpannable)) {
-            return;
+            return
         }
-        try {
-            Object[] mSpans = ((Object[]) getFieldValue(mSpannable, "mSpans"));
-            if (null != mSpans) {
-                for (Object mSpan : mSpans) {
-                    if (mSpan instanceof SelectImageSpan) {
-                        SelectImageSpan imageSpan = (SelectImageSpan) mSpan;
-                        if (imageSpan.getBgColor() != bgColor) {
-                            imageSpan.setBgColor(bgColor);
-                        }
+        val mSpans = getFieldValue(mSpannable, "mSpans") as Array<*>?
+        if (null != mSpans) {
+            for (mSpan in mSpans) {
+                if (mSpan is SelectImageSpan) {
+                    val imageSpan = mSpan
+                    if (imageSpan.bgColor != bgColor) {
+                        imageSpan.bgColor = bgColor
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
     /**
      * 重置emoji选择背景
      */
-    private void resetEmojiBackground() {
-        if (TextUtils.isEmpty(mSpannable)) {
-            return;
-        }
-        try {
-            Object[] mSpans = ((Object[]) getFieldValue(mSpannable, "mSpans"));
-            if (null != mSpans) {
-                for (Object mSpan : mSpans) {
-                    if (mSpan instanceof SelectImageSpan) {
-                        SelectImageSpan imageSpan = (SelectImageSpan) mSpan;
-                        if (imageSpan.getBgColor() != Color.TRANSPARENT) {
-                            imageSpan.setBgColor(Color.TRANSPARENT);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private fun resetEmojiBackground() {
+        mSpannable?.let { setEmojiBackground(it, Color.TRANSPARENT) }
     }
 
     /**
@@ -730,606 +910,375 @@ public class SelectTextHelper {
      * 自定义功能：复制、全选、等等
      * Custom function:Copy, Select all, And so on.
      */
-    private class OperateWindow {
+    @SuppressLint("InflateParams")
+    private inner class OperateWindow(context: Context?) {
+        private val mWindow: PopupWindow?
+        private val mTempCoors = IntArray(2)
+        private val mWidth: Int
+        private val mHeight: Int
+        private val listAdapter: SelectTextPopAdapter
+        private val rvContent: RecyclerView?
+        private val ivArrow: ImageView
 
-        private PopupWindow mWindow;
-        private int[] mTempCoors = new int[2];
-
-        private int mWidth;
-        private int mHeight;
-        private SelectTextPopAdapter listAdapter;
-
-        private RecyclerView rv_content;
-        private ImageView iv_arrow;
-
-        public OperateWindow(final Context context) {
-            View contentView = LayoutInflater.from(context).inflate(R.layout.pop_operate, null);
-            rv_content = contentView.findViewById(R.id.rv_content);
-            iv_arrow = contentView.findViewById(R.id.iv_arrow);
+        init {
+            val contentView = LayoutInflater.from(context).inflate(R.layout.pop_operate, null)
+            rvContent = contentView.findViewById(R.id.rv_content)
+            ivArrow = contentView.findViewById(R.id.iv_arrow)
             if (0 != mPopBgResource) {
-                rv_content.setBackgroundResource(mPopBgResource);
+                rvContent.setBackgroundResource(mPopBgResource)
             }
             if (0 != mPopArrowImg) {
-                iv_arrow.setBackgroundResource(mPopArrowImg);
+                ivArrow.setBackgroundResource(mPopArrowImg)
             }
-
-            int size = itemTextList.size();
-            // 宽 个数超过mPopSpanCount 取 mPopSpanCount
-            mWidth = dp2px(12 * 4 + 52 * (Math.min(size, mPopSpanCount)));
-            // 行数
-            int row = size / mPopSpanCount // 行数
-                    + ((size % mPopSpanCount) == 0 ? 0 : 1);// 有余数 加一行
-            // 高
-            mHeight = dp2px(12 * (1 + row) + 52 * row + 5);
-            mWindow = new PopupWindow(
-                    contentView,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    false);
-            mWindow.setClippingEnabled(false);
-
-            listAdapter = new SelectTextPopAdapter(context, itemTextList);
-            listAdapter.setOnclickItemListener(position -> {
-                dismiss();
-                itemListenerList.get(position).onClick();
-            });
-            if (rv_content != null) {
-                rv_content.setAdapter(listAdapter);
+            val size = itemTextList.size // 宽 个数超过mPopSpanCount 取 mPopSpanCount
+            mWidth = dp2px((12 * 4 + 52 * size.coerceAtMost(mPopSpanCount)).toFloat()) // 行数
+            val row = (size / mPopSpanCount // 行数
+                    + if (size % mPopSpanCount == 0) 0 else 1) // 有余数 加一行 // 高
+            mHeight = dp2px((12 * (1 + row) + 52 * row + 5).toFloat())
+            mWindow = PopupWindow(
+                contentView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                false
+            )
+            mWindow.isClippingEnabled = false
+            listAdapter = SelectTextPopAdapter(context!!, itemTextList)
+            listAdapter.setOnclickItemListener(object : onClickItemListener {
+                override fun onClick(position: Int) {
+                    dismiss()
+                    itemListenerList[position].onClick()
+                }
+            })
+            if (rvContent != null) {
+                rvContent.adapter = listAdapter
             }
         }
 
-        public void show() {
-            int deviceWidth = getDisplayWidth();
-            int size = itemTextList.size();
+        fun show() {
+            val deviceWidth = displayWidth
+            val size = itemTextList.size
             if (size > mPopSpanCount) {
-                rv_content.setLayoutManager(new GridLayoutManager(mContext, mPopSpanCount, GridLayoutManager.VERTICAL, false));
+                rvContent!!.layoutManager =
+                    GridLayoutManager(mContext, mPopSpanCount, GridLayoutManager.VERTICAL, false)
             } else {
-                rv_content.setLayoutManager(new GridLayoutManager(mContext, size, GridLayoutManager.VERTICAL, false));
+                rvContent!!.layoutManager =
+                    GridLayoutManager(mContext, size, GridLayoutManager.VERTICAL, false)
             }
-
-            mTextView.getLocationInWindow(mTempCoors);
-            Layout layout = mTextView.getLayout();
-            int posX;
-            int posXTemp = 0;
-            int startX = (int) layout.getPrimaryHorizontal(mSelectionInfo.mStart) + mTempCoors[0];
-            int startY = layout.getLineTop(layout.getLineForOffset(mSelectionInfo.mStart));
-            int endY = layout.getLineTop(layout.getLineForOffset(mSelectionInfo.mEnd));
-            int posY = startY + mTempCoors[1] - mHeight;
-            if (posY < 0) posY = 0;
+            mTextView.getLocationInWindow(mTempCoors)
+            val layout = mTextView.layout
+            var posX: Int
+            var posXTemp = 0
+            val startX = layout.getPrimaryHorizontal(mSelectionInfo.mStart).toInt() + mTempCoors[0]
+            val startY = layout.getLineTop(layout.getLineForOffset(mSelectionInfo.mStart))
+            val endY = layout.getLineTop(layout.getLineForOffset(mSelectionInfo.mEnd))
+            var posY = startY + mTempCoors[1] - mHeight
+            if (posY < 0) posY = 0
 
             // 在同一行
-            if (startY == endY) {
-                int endX = (int) layout.getPrimaryHorizontal(mSelectionInfo.mEnd) + mTempCoors[0];
-                // posX = (起始点 + 终点) / 2 - (向左移动 mWidth / 2)
-                posX = (startX + endX) / 2 - mWidth / 2;
-            } else {
-                // posX = (起始点 + (文本左边距  + 文本宽度                - 文本右padding)) / 2         - (向左移动 mWidth / 2)
-                posX = (startX + (mTempCoors[0] + mTextView.getWidth() - mTextView.getPaddingRight())) / 2 - mWidth / 2;
+            posX = if (startY == endY) {
+                val endX = layout.getPrimaryHorizontal(mSelectionInfo.mEnd)
+                    .toInt() + mTempCoors[0] // posX = (起始点 + 终点) / 2 - (向左移动 mWidth / 2)
+                (startX + endX) / 2 - mWidth / 2
+            } else { // posX = (起始点 + (文本左边距  + 文本宽度                - 文本右padding)) / 2         - (向左移动 mWidth / 2)
+                (startX + (mTempCoors[0] + mTextView.width - mTextView.paddingRight)) / 2 - mWidth / 2
             }
             if (posX <= 0) {
-                posXTemp = posX;
-                posX = 0;
+                posXTemp = posX
+                posX = 0
             } else if (posX + mWidth > deviceWidth) {
-                posXTemp = posX;
-                posX = deviceWidth - mWidth;
+                posXTemp = posX
+                posX = deviceWidth - mWidth
             }
-
-            mWindow.showAtLocation(mTextView, Gravity.NO_GRAVITY, posX, posY);
-            // view中心位置
-            int arrowTranslationX;
-            // 在中间
-            if (posXTemp == 0) {
-                arrowTranslationX = mWidth / 2 - dp2px(16);// - dp2px(mContext, 16) 是 的margin
+            mWindow!!.showAtLocation(mTextView, Gravity.NO_GRAVITY, posX, posY) // view中心位置
+            var arrowTranslationX: Int // 在中间
+            arrowTranslationX = when {
+                posXTemp == 0 -> { // - dp2px(mContext, 16) 是 的margin
+                    mWidth / 2 - dp2px(16f)
+                }
+                posXTemp < 0 -> {
+                    posXTemp + mWidth / 2
+                }
+                else -> { // arrowTranslationX = 两坐标中心点   - 弹窗左侧点 - iv_arrow的margin
+                    posXTemp + mWidth / 2 - posX - dp2px(16f)
+                }
             }
-            // 在左边 箭头就是两坐标的中间 （+ mWidth / 2 是还原坐标）
-            else if (posXTemp < 0) {
-                arrowTranslationX = posXTemp + mWidth / 2;
+            if (arrowTranslationX < dp2px(4f)) {
+                arrowTranslationX = dp2px(4f)
+            } else if (arrowTranslationX > mWidth - dp2px(4f)) {
+                arrowTranslationX = mWidth - dp2px(4f)
             }
-            // 在右边 箭头就是两坐标的中间 - 一个mWidth / 2的位置 （+ mWidth / 2 是还原坐标）
-            else {
-                // arrowTranslationX =     两坐标中心点       - 弹窗左侧点 - iv_arrow的margin
-                arrowTranslationX = (posXTemp + mWidth / 2) - posX - dp2px(16);
-            }
-            if (arrowTranslationX < dp2px(4)) {
-                arrowTranslationX = dp2px(4);
-            } else if (arrowTranslationX > mWidth - dp2px(4)) {
-                arrowTranslationX = mWidth - dp2px(4);
-            }
-            iv_arrow.setTranslationX(arrowTranslationX);
+            ivArrow.translationX = arrowTranslationX.toFloat()
         }
 
-        public void dismiss() {
-            mWindow.dismiss();
+        fun dismiss() {
+            mWindow!!.dismiss()
             if (null != mSelectListener) {
-                mSelectListener.onDismissCustomPop();
+                mSelectListener!!.onDismissCustomPop()
             }
         }
 
-        public boolean isShowing() {
-            if (null == mWindow) {
-                return false;
-            }
-            return mWindow.isShowing();
-        }
-
+        val isShowing: Boolean
+            get() = mWindow?.isShowing ?: false
     }
 
     /**
      * 游标
      */
-    private class CursorHandle extends View {
+    private inner class CursorHandle(var isLeft: Boolean) : View(mContext) {
+        private var mPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val mPopupWindow: PopupWindow
+        private val mCircleRadius = mCursorHandleSize / 2
+        private val mWidth = mCursorHandleSize
+        private val mHeight = mCursorHandleSize
+        private val mPadding = 32 // 游标padding
 
-        private PopupWindow mPopupWindow;
-        private Paint mPaint;
-
-        private int mCircleRadius = mCursorHandleSize / 2;
-        private int mWidth = mCursorHandleSize;
-        private int mHeight = mCursorHandleSize;
-        private int mPadding = 32;// 游标padding
-        private boolean isLeft;
-
-        public CursorHandle(boolean isLeft) {
-            super(mContext);
-            this.isLeft = isLeft;
-            mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            mPaint.setColor(mCursorHandleColor);
-
-            mPopupWindow = new PopupWindow(this);
-            mPopupWindow.setClippingEnabled(false);
-            mPopupWindow.setWidth(mWidth + mPadding * 2);
-            mPopupWindow.setHeight(mHeight + mPadding / 2);
-            invalidate();
+        init {
+            mPaint.color = mCursorHandleColor
+            mPopupWindow = PopupWindow(this)
+            mPopupWindow.isClippingEnabled = false
+            mPopupWindow.width = mWidth + mPadding * 2
+            mPopupWindow.height = mHeight + mPadding / 2
+            invalidate()
         }
 
-        @Override
-        protected void onDraw(Canvas canvas) {
-            canvas.drawCircle(mCircleRadius + mPadding, mCircleRadius, mCircleRadius, mPaint);
+        override fun onDraw(canvas: Canvas) {
+            canvas.drawCircle(
+                (mCircleRadius + mPadding).toFloat(),
+                mCircleRadius.toFloat(),
+                mCircleRadius.toFloat(),
+                mPaint
+            )
             if (isLeft) {
-                canvas.drawRect(mCircleRadius + mPadding, 0, mCircleRadius * 2 + mPadding, mCircleRadius, mPaint);
+                canvas.drawRect(
+                    (mCircleRadius + mPadding).toFloat(),
+                    0f,
+                    (mCircleRadius * 2 + mPadding).toFloat(),
+                    mCircleRadius.toFloat(),
+                    mPaint
+                )
             } else {
-                canvas.drawRect(mPadding, 0, mCircleRadius + mPadding, mCircleRadius, mPaint);
+                canvas.drawRect(
+                    mPadding.toFloat(),
+                    0f,
+                    (mCircleRadius + mPadding).toFloat(),
+                    mCircleRadius.toFloat(),
+                    mPaint
+                )
             }
         }
 
-        private int mAdjustX;
-        private int mAdjustY;
+        private var mAdjustX = 0
+        private var mAdjustY = 0
+        private var mBeforeDragStart = 0
+        private var mBeforeDragEnd = 0
 
-        private int mBeforeDragStart;
-        private int mBeforeDragEnd;
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    mBeforeDragStart = mSelectionInfo.mStart;
-                    mBeforeDragEnd = mSelectionInfo.mEnd;
-                    mAdjustX = (int) event.getX();
-                    mAdjustY = (int) event.getY();
-                    break;
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    showOperateWindow();
-                    if (mMagnifierShow) {
-                        // android 9 放大镜
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-                                && null != mMagnifier) {
-                            mMagnifier.dismiss();
+        @SuppressLint("ClickableViewAccessibility")
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    mBeforeDragStart = mSelectionInfo.mStart
+                    mBeforeDragEnd = mSelectionInfo.mEnd
+                    mAdjustX = event.x.toInt()
+                    mAdjustY = event.y.toInt()
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    showOperateWindow()
+                    if (mMagnifierShow) { // android 9 放大镜
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && null != mMagnifier) {
+                            mMagnifier!!.dismiss()
                         }
                     }
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    mOperateWindow.dismiss();
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    mOperateWindow!!.dismiss()
                     if (null != mSelectListener) {
-                        mSelectListener.onDismissCustomPop();
+                        mSelectListener!!.onDismissCustomPop()
                     }
-                    int rawX = (int) event.getRawX();
-                    int rawY = (int) event.getRawY();
-                    // x y不准 x 减去textView距离x轴距离值  y减去字体大小的像素值
-                    update(rawX + mAdjustX - mWidth - mTextViewMarginStart,
-                            rawY + mAdjustY - mHeight - (int) mTextView.getTextSize());
-                    if (mMagnifierShow) {
-                        // android 9 放大镜功能
+                    val rawX = event.rawX.toInt()
+                    val rawY = event.rawY.toInt() // x y不准 x 减去textView距离x轴距离值  y减去字体大小的像素值
+                    update(
+                        rawX + mAdjustX - mWidth - mTextViewMarginStart,
+                        rawY + mAdjustY - mHeight - mTextView.textSize.toInt()
+                    )
+                    if (mMagnifierShow) { // android 9 放大镜功能
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                             if (null == mMagnifier) {
-                                mMagnifier = new Magnifier(mTextView);
-                                mMagnifier.getWidth();
+                                mMagnifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    Magnifier.Builder(mTextView).build()
+                                } else {
+                                    Magnifier(mTextView)
+                                }
                             }
-                            final int[] viewPosition = new int[2];
-                            mTextView.getLocationOnScreen(viewPosition);
-                            int magnifierX = rawX - viewPosition[0];
-                            int magnifierY = rawY - viewPosition[1] - dp2px(32);
-                            mMagnifier.show(magnifierX, Math.max(magnifierY, 0));
+                            val viewPosition = IntArray(2)
+                            mTextView.getLocationOnScreen(viewPosition)
+                            val magnifierX = rawX - viewPosition[0]
+                            val magnifierY = rawY - viewPosition[1] - dp2px(32f)
+                            mMagnifier!!.show(
+                                magnifierX.toFloat(), magnifierY.coerceAtLeast(0).toFloat()
+                            )
                         }
                     }
-                    break;
+                }
             }
-            return true;
+            return true
         }
 
-        private void changeDirection() {
-            isLeft = !isLeft;
-            invalidate();
+        private fun changeDirection() {
+            isLeft = !isLeft
+            invalidate()
         }
 
-        public void dismiss() {
-            mPopupWindow.dismiss();
+        fun dismiss() {
+            mPopupWindow.dismiss()
         }
 
-        private int[] mTempCoors = new int[2];
-
-        public void update(int x, int y) {
-            mTextView.getLocationInWindow(mTempCoors);
-            int oldOffset;
-            if (isLeft) {
-                oldOffset = mSelectionInfo.mStart;
+        private val mTempCoors = IntArray(2)
+        fun update(x: Int, y: Int) {
+            var yCopy = y
+            mTextView.getLocationInWindow(mTempCoors)
+            val oldOffset = if (isLeft) {
+                mSelectionInfo.mStart
             } else {
-                oldOffset = mSelectionInfo.mEnd;
+                mSelectionInfo.mEnd
             }
-
-            y -= mTempCoors[1];
-
-            int offset = getHysteresisOffset(mTextView, x, y, oldOffset);
-
+            yCopy -= mTempCoors[1]
+            val offset = getHysteresisOffset(mTextView, x, yCopy, oldOffset)
             if (offset != oldOffset) {
-                resetSelectionInfo();
+                resetSelectionInfo()
                 if (isLeft) {
                     if (offset > mBeforeDragEnd) {
-                        CursorHandle handle = getCursorHandle(false);
-                        changeDirection();
-                        handle.changeDirection();
-                        mBeforeDragStart = mBeforeDragEnd;
-                        selectText(mBeforeDragEnd, offset);
-                        handle.updateCursorHandle();
+                        val handle = getCursorHandle(false)
+                        changeDirection()
+                        handle!!.changeDirection()
+                        mBeforeDragStart = mBeforeDragEnd
+                        selectText(mBeforeDragEnd, offset)
+                        handle.updateCursorHandle()
                     } else {
-                        selectText(offset, -1);
+                        selectText(offset, -1)
                     }
-                    updateCursorHandle();
+                    updateCursorHandle()
                 } else {
                     if (offset < mBeforeDragStart) {
-                        CursorHandle handle = getCursorHandle(true);
-                        handle.changeDirection();
-                        changeDirection();
-                        mBeforeDragEnd = mBeforeDragStart;
-                        selectText(offset, mBeforeDragStart);
-                        handle.updateCursorHandle();
+                        val handle = getCursorHandle(true)
+                        handle!!.changeDirection()
+                        changeDirection()
+                        mBeforeDragEnd = mBeforeDragStart
+                        selectText(offset, mBeforeDragStart)
+                        handle.updateCursorHandle()
                     } else {
-                        selectText(mBeforeDragStart, offset);
+                        selectText(mBeforeDragStart, offset)
                     }
-                    updateCursorHandle();
+                    updateCursorHandle()
                 }
             }
         }
 
-        private void updateCursorHandle() {
-            mTextView.getLocationInWindow(mTempCoors);
-            Layout layout = mTextView.getLayout();
+        private fun updateCursorHandle() {
+            mTextView.getLocationInWindow(mTempCoors)
+            val layout = mTextView.layout
             if (isLeft) {
-                mPopupWindow.update((int) layout.getPrimaryHorizontal(mSelectionInfo.mStart) - mWidth + getExtraX(),
-                        layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mStart)) + getExtraY(), -1, -1);
+                mPopupWindow.update(
+                    layout.getPrimaryHorizontal(mSelectionInfo.mStart).toInt() - mWidth + extraX,
+                    layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mStart)) + extraY,
+                    -1,
+                    -1
+                )
             } else {
-                int horizontalEnd = (int) layout.getPrimaryHorizontal(mSelectionInfo.mEnd);
-                int lineBottomEnd = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd));
-                // 右游标
-                // mSelectionInfo.mEnd != 0 不是第一位
+                var horizontalEnd = layout.getPrimaryHorizontal(mSelectionInfo.mEnd).toInt()
+                var lineBottomEnd =
+                    layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd)) // 右游标 // mSelectionInfo.mEnd != 0 不是第一位
                 // horizontalEnd == 0 右游标在最后面
                 // 把右游标水平坐标定位在减去一个字的线条右侧
                 // 把右游标底部线坐标定位在上一行
                 if (mSelectionInfo.mEnd != 0 && horizontalEnd == 0) {
-                    horizontalEnd = (int) layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
-                    lineBottomEnd = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1));
+                    horizontalEnd =
+                        layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
+                            .toInt()
+                    lineBottomEnd =
+                        layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
                 }
-                mPopupWindow.update(horizontalEnd + getExtraX(), lineBottomEnd + getExtraY(), -1, -1);
+                mPopupWindow.update(horizontalEnd + extraX, lineBottomEnd + extraY, -1, -1)
             }
         }
 
-        public void show(int x, int y) {
-            mTextView.getLocationInWindow(mTempCoors);
-            int offset = isLeft ? mWidth : 0;
-            mPopupWindow.showAtLocation(mTextView, Gravity.NO_GRAVITY, x - offset + getExtraX(), y + getExtraY());
+        fun show(x: Int, y: Int) {
+            mTextView.getLocationInWindow(mTempCoors)
+            val offset = if (isLeft) mWidth else 0
+            mPopupWindow.showAtLocation(
+                mTextView, Gravity.NO_GRAVITY, x - offset + extraX, y + extraY
+            )
         }
 
-        public int getExtraX() {
-            return mTempCoors[0] - mPadding + mTextView.getPaddingLeft();
-        }
-
-        public int getExtraY() {
-            return mTempCoors[1] + mTextView.getPaddingTop();
-        }
+        val extraX: Int
+            get() = mTempCoors[0] - mPadding + mTextView.paddingLeft
+        val extraY: Int
+            get() = mTempCoors[1] + mTextView.paddingTop
     }
 
-    private CursorHandle getCursorHandle(boolean isLeft) {
-        if (mStartHandle.isLeft == isLeft) {
-            return mStartHandle;
+    private fun getCursorHandle(isLeft: Boolean): CursorHandle? {
+        return if (mStartHandle!!.isLeft == isLeft) {
+            mStartHandle
         } else {
-            return mEndHandle;
+            mEndHandle
         }
     }
 
-    private class SelectionInfo {
-        public int mStart;
-        public int mEnd;
-        public String mSelectionContent;
+    private inner class SelectionInfo {
+        var mStart = 0
+        var mEnd = 0
+        var mSelectionContent: String? = null
     }
 
     /**
      * 处理内容链接跳转
      */
-    private class LinkMovementMethodInterceptor extends LinkMovementMethod {
-
-        private long downLinkTime;
-
-        @Override
-        public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
-            int action = event.getAction();
-
-            if (action == MotionEvent.ACTION_UP ||
-                    action == MotionEvent.ACTION_DOWN) {
-                int x = (int) event.getX();
-                int y = (int) event.getY();
-
-                x -= widget.getTotalPaddingLeft();
-                y -= widget.getTotalPaddingTop();
-
-                x += widget.getScrollX();
-                y += widget.getScrollY();
-
-                Layout layout = widget.getLayout();
-                int line = layout.getLineForVertical(y);
-                int off = layout.getOffsetForHorizontal(line, x);
-
-                ClickableSpan[] links =
-                        buffer.getSpans(off, off, ClickableSpan.class);
-
-                if (links.length != 0) {
-                    if (action == MotionEvent.ACTION_UP) {
-                        // 长按
+    private inner class LinkMovementMethodInterceptor : LinkMovementMethod() {
+        private var downLinkTime: Long = 0
+        override fun onTouchEvent(
+            widget: TextView, buffer: Spannable, event: MotionEvent
+        ): Boolean {
+            val action = event.action
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
+                var x = event.x.toInt()
+                var y = event.y.toInt()
+                x -= widget.totalPaddingLeft
+                y -= widget.totalPaddingTop
+                x += widget.scrollX
+                y += widget.scrollY
+                val layout = widget.layout
+                val line = layout.getLineForVertical(y)
+                val off = layout.getOffsetForHorizontal(line, x.toFloat())
+                val links = buffer.getSpans(off, off, ClickableSpan::class.java)
+                if (links.isNotEmpty()) {
+                    if (action == MotionEvent.ACTION_UP) { // 长按
                         if (downLinkTime + ViewConfiguration.getLongPressTimeout() < System.currentTimeMillis()) {
-                            return false;
-                        }
-                        // 点击
-                        if (links[0] instanceof URLSpan) {
-                            URLSpan url = (URLSpan) links[0];
-                            if (!TextUtils.isEmpty(url.getURL())) {
+                            return false
+                        } // 点击
+                        if (links[0] is URLSpan) {
+                            val url = links[0] as URLSpan
+                            if (!TextUtils.isEmpty(url.url)) {
                                 if (null != mSelectListener) {
-                                    usedClickListener = true;
-                                    mSelectListener.onClickUrl(url.getURL());
+                                    usedClickListener = true
+                                    mSelectListener!!.onClickUrl(url.url)
                                 }
-                                return true;
+                                return true
                             } else {
-                                links[0].onClick(widget);
+                                links[0].onClick(widget)
                             }
                         }
                     } else if (action == MotionEvent.ACTION_DOWN) {
-                        downLinkTime = System.currentTimeMillis();
-                        Selection.setSelection(buffer,
-                                buffer.getSpanStart(links[0]),
-                                buffer.getSpanEnd(links[0]));
+                        downLinkTime = System.currentTimeMillis()
+                        Selection.setSelection(
+                            buffer, buffer.getSpanStart(links[0]), buffer.getSpanEnd(links[0])
+                        )
                     }
-                    return true;
+                    return true
                 } else {
-                    Selection.removeSelection(buffer);
+                    Selection.removeSelection(buffer)
                 }
             }
-
-            return super.onTouchEvent(widget, buffer, event);
-        }
-
-    }
-
-    // util
-
-    public static int getPreciseOffset(TextView textView, int x, int y) {
-        Layout layout = textView.getLayout();
-        if (layout != null) {
-            int topVisibleLine = layout.getLineForVertical(y);
-            int offset = layout.getOffsetForHorizontal(topVisibleLine, x);
-
-            int offsetX = (int) layout.getPrimaryHorizontal(offset);
-
-            if (offsetX > x) {
-                return layout.getOffsetToLeftOf(offset);
-            } else {
-                return offset;
-            }
-        } else {
-            return -1;
+            return super.onTouchEvent(widget, buffer, event)
         }
     }
 
-    public static int getHysteresisOffset(TextView textView, int x, int y, int previousOffset) {
-        final Layout layout = textView.getLayout();
-        if (layout == null) return -1;
-
-        int line = layout.getLineForVertical(y);
-
-        // The "HACK BLOCK"S in this function is required because of how Android Layout for
-        // TextView works - if 'offset' equals to the last character of a line, then
-        //
-        // * getLineForOffset(offset) will result the NEXT line
-        // * getPrimaryHorizontal(offset) will return 0 because the next insertion point is on the next line
-        // * getOffsetForHorizontal(line, x) will not return the last offset of a line no matter where x is
-        // These are highly undesired and is worked around with the HACK BLOCK
-        //
-        // @see Moon+ Reader/Color Note - see how it can't select the last character of a line unless you move
-        // the cursor to the beginning of the next line.
-        //
-        ////////////////////HACK BLOCK////////////////////////////////////////////////////
-
-        if (isEndOfLineOffset(layout, previousOffset)) {
-            // we have to minus one from the offset so that the code below to find
-            // the previous line can work correctly.
-            int left = (int) layout.getPrimaryHorizontal(previousOffset - 1);
-            int right = (int) layout.getLineRight(line);
-            int threshold = (right - left) / 2; // half the width of the last character
-            if (x > right - threshold) {
-                previousOffset -= 1;
-            }
-        }
-        ///////////////////////////////////////////////////////////////////////////////////
-
-        final int previousLine = layout.getLineForOffset(previousOffset);
-        final int previousLineTop = layout.getLineTop(previousLine);
-        final int previousLineBottom = layout.getLineBottom(previousLine);
-        final int hysteresisThreshold = (previousLineBottom - previousLineTop) / 2;
-
-        // If new line is just before or after previous line and y position is less than
-        // hysteresisThreshold away from previous line, keep cursor on previous line.
-        if (((line == previousLine + 1) && ((y - previousLineBottom) < hysteresisThreshold)) || ((line == previousLine - 1) && ((
-                previousLineTop
-                        - y) < hysteresisThreshold))) {
-            line = previousLine;
-        }
-
-        int offset = layout.getOffsetForHorizontal(line, x);
-
-        // This allow the user to select the last character of a line without moving the
-        // cursor to the next line. (As Layout.getOffsetForHorizontal does not return the
-        // offset of the last character of the specified line)
-        //
-        // But this function will probably get called again immediately, must decrement the offset
-        // by 1 to compensate for the change made below. (see previous HACK BLOCK)
-        /////////////////////HACK BLOCK///////////////////////////////////////////////////
-        if (offset < textView.getText().length() - 1) {
-            if (isEndOfLineOffset(layout, offset + 1)) {
-                int left = (int) layout.getPrimaryHorizontal(offset);
-                int right = (int) layout.getLineRight(line);
-                int threshold = (right - left) / 2; // half the width of the last character
-                if (x > right - threshold) {
-                    offset += 1;
-                }
-            }
-        }
-        //////////////////////////////////////////////////////////////////////////////////
-
-        return offset;
-    }
-
-    private static boolean isEndOfLineOffset(Layout layout, int offset) {
-        return offset > 0 && layout.getLineForOffset(offset) == layout.getLineForOffset(offset - 1) + 1;
-    }
-
-    public static int getDisplayWidth() {
-        return Resources.getSystem().getDisplayMetrics().widthPixels;
-    }
-
-    public static int getDisplayHeight() {
-        return Resources.getSystem().getDisplayMetrics().heightPixels;
-    }
-
-    public static int dp2px(float dpValue) {
-        return (int) (dpValue * Resources.getSystem().getDisplayMetrics().density + 0.5f);
-    }
-
-    /**
-     * 设置宽高
-     *
-     * @param v
-     * @param w
-     * @param h
-     */
-    public static void setWidthHeight(View v, int w, int h) {
-        ViewGroup.LayoutParams params = v.getLayoutParams();
-        params.width = w;
-        params.height = h;
-        v.setLayoutParams(params);
-    }
-
-    /**
-     * 通知栏的高度
-     */
-    private static int STATUS_HEIGHT = 0;
-
-    /**
-     * 获取通知栏的高度
-     */
-    public static int getStatusHeight() {
-        if (0 != STATUS_HEIGHT) {
-            return STATUS_HEIGHT;
-        }
-        int resid = Resources.getSystem().getIdentifier("status_bar_height", "dimen", "android");
-        if (resid > 0) {
-            STATUS_HEIGHT = Resources.getSystem().getDimensionPixelSize(resid);
-            return STATUS_HEIGHT;
-        }
-        return -1;
-    }
-
-    /**
-     * 反射获取对象属性值
-     */
-    public static Object getFieldValue(Object obj, String fieldName) {
-        if (obj == null || TextUtils.isEmpty(fieldName)) {
-            return null;
-        }
-
-        Class<?> clazz = obj.getClass();
-        while (clazz != Object.class) {
-            try {
-                Field field = clazz.getDeclaredField(fieldName);
-                field.setAccessible(true);
-                return field.get(obj);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            clazz = clazz.getSuperclass();
-        }
-
-        return null;
-    }
-
-    /**
-     * 判断是否为emoji表情符
-     *
-     * @param c 字符
-     * @return 是否为emoji字符
-     */
-    public static boolean isEmojiText(char c) {
-        return !(c == 0x0 ||
-                c == 0x9 ||
-                c == 0xA ||
-                c == 0xD ||
-                (c >= 0x20 && c <= 0xD7FF) ||
-                (c >= 0xE000 && c <= 0xFFFD) ||
-                (c >= 0x100000 && c <= 0x10FFFF));
-    }
-
-    /**
-     * 利用反射检测文本是否是ImageSpan文本
-     */
-    private static boolean isImageSpanText(Spannable mSpannable) {
-        if (TextUtils.isEmpty(mSpannable)) {
-            return false;
-        }
-        try {
-            Object[] mSpans = ((Object[]) getFieldValue(mSpannable, "mSpans"));
-            if (null != mSpans) {
-                for (Object mSpan : mSpans) {
-                    if (mSpan instanceof SelectImageSpan) {
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * 匹配Image
-     *
-     * @param content Target content
-     */
-    public static boolean matchImageSpan(String content) {
-        if (emojiMap.isEmpty()) {
-            return false;
-        }
-        for (Map.Entry<String, Integer> entry : emojiMap.entrySet()) {
-            Matcher matcher = Pattern.compile(entry.getKey()).matcher(content);
-            if (matcher.find()) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

@@ -1,156 +1,135 @@
-package com.xiaoguang.selecttextview;
+package com.xiaoguang.selecttextview
 
-import android.app.Dialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
-import android.os.Bundle;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import com.xiaoguang.selecttext.SelectTextHelper;
-
+import android.app.Dialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
+import com.xiaoguang.selecttext.SelectTextHelper
+import com.xiaoguang.selecttext.SelectTextHelper.OnSelectListener
 
 /**
  * 选择文字
  * hxg 2021/9/14 qq:929842234z
  */
-public class SelectTextDialog extends Dialog {
-
-    private SelectTextHelper mSelectableTextHelper;
-    private String mText;
-    private String selectText;
-
-    public SelectTextDialog(Context context, String mText) {
-        super(context, R.style.SelectTextFragment);
-        this.mText = mText;
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        setCancelable(true);
-        setCanceledOnTouchOutside(true);
-        setContentView(R.layout.fragment_select_text);
+class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
+    context!!, R.style.SelectTextFragment
+) {
+    private var mSelectableTextHelper: SelectTextHelper? = null
+    private var selectText: String? = null
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setCancelable(true)
+        setCanceledOnTouchOutside(true)
+        setContentView(R.layout.fragment_select_text)
 
         // 一定要在setContentView之后调用，否则无效
-        getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-
-        findViewById(R.id.rl_selector).setOnClickListener(v -> {
-            if (mSelectableTextHelper.isPopShowing()) {
-                mSelectableTextHelper.reset();
+        window!!.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        findViewById<View>(R.id.rl_selector).setOnClickListener { v: View? ->
+            if (mSelectableTextHelper!!.isPopShowing) {
+                mSelectableTextHelper!!.reset()
             } else {
-                dismiss();
+                dismiss()
             }
-        });
-        TextView tv_msg_content = findViewById(R.id.tv_msg_content);
-        tv_msg_content.setText(mText);
-        if ((mText.length() > 0 && mText.length() > 16)
-                || mText.contains("\n")) {
-            tv_msg_content.setGravity(Gravity.START);
-        } else {
-            tv_msg_content.setGravity(Gravity.CENTER);
         }
-        mSelectableTextHelper = new SelectTextHelper
-                .Builder(tv_msg_content)
-                .setCursorHandleColor(getContext().getResources().getColor(R.color.colorAccent))
-                .setCursorHandleSizeInDp(24)
-                .setSelectedColor(getContext().getResources().getColor(R.color.colorAccentTransparent))
-                .setSelectAll(false)
-                .addItem(R.drawable.ic_msg_copy, R.string.copy,
-                        () -> copy(selectText))
-                .addItem(R.drawable.ic_msg_select_all, R.string.select_all,
-                        this::selectAll)
-                .addItem(R.drawable.ic_msg_forward, R.string.forward,
-                        () -> forward(selectText))
-                .build();
-
-        mSelectableTextHelper.setSelectListener(new SelectTextHelper.OnSelectListener() {
-            @Override
-            public void onClick(View v) {
+        val tv_msg_content = findViewById<TextView>(R.id.tv_msg_content)
+        tv_msg_content.text = mText
+        if (mText.length > 0 && mText.length > 16
+            || mText.contains("\n")
+        ) {
+            tv_msg_content.gravity = Gravity.START
+        } else {
+            tv_msg_content.gravity = Gravity.CENTER
+        }
+        mSelectableTextHelper = SelectTextHelper.Builder(tv_msg_content)
+            .setCursorHandleColor(ContextCompat.getColor(context, R.color.colorAccent))
+            .setCursorHandleSizeInDp(24f)
+            .setSelectedColor(ContextCompat.getColor(context, R.color.colorAccentTransparent))
+            .setSelectAll(false)
+            .addItem(R.drawable.ic_msg_copy, R.string.copy,
+                object : SelectTextHelper.Builder.onSeparateItemClickListener {
+                    override fun onClick() {
+                        copy(selectText)
+                    }
+                })
+            .addItem(
+                R.drawable.ic_msg_select_all,
+                R.string.select_all,
+                object : SelectTextHelper.Builder.onSeparateItemClickListener {
+                    override fun onClick() {
+                        selectAll()
+                    }
+                })
+            .addItem(R.drawable.ic_msg_forward, R.string.forward,
+                object : SelectTextHelper.Builder.onSeparateItemClickListener {
+                    override fun onClick() {
+                        forward(selectText)
+                    }
+                })
+            .build()
+        mSelectableTextHelper!!.setSelectListener(object : OnSelectListener {
+            override fun onClick(v: View?) {}
+            override fun onLongClick(v: View?) {}
+            override fun onTextSelected(content: CharSequence?) {
+                selectText = content.toString()
             }
 
-            @Override
-            public void onLongClick(View v) {
+            override fun onDismiss() {
+                dismiss()
             }
 
-            @Override
-            public void onTextSelected(CharSequence content) {
-                selectText = content.toString();
+            override fun onClickUrl(url: String?) {
+                toast("点击了：  $url")
             }
 
-            @Override
-            public void onDismiss() {
-                dismiss();
-            }
-
-            @Override
-            public void onClickUrl(String url) {
-                toast("点击了：  " + url);
-            }
-
-            @Override
-            public void onSelectAllShowCustomPop() {
-            }
-
-            @Override
-            public void onReset() {
-            }
-
-            @Override
-            public void onDismissCustomPop() {
-            }
-
-            @Override
-            public void onScrolling() {
-            }
-        });
+            override fun onSelectAllShowCustomPop() {}
+            override fun onReset() {}
+            override fun onDismissCustomPop() {}
+            override fun onScrolling() {}
+        })
     }
 
-    @Override
-    public void dismiss() {
-        mSelectableTextHelper.reset();
-        super.dismiss();
+    override fun dismiss() {
+        mSelectableTextHelper!!.reset()
+        super.dismiss()
     }
 
     /**
      * 复制
      */
-    private void copy(String selectText) {
-        SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissAllPop"));
-        ClipboardManager cm = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-        if (cm != null) {
-            cm.setPrimaryClip(ClipData.newPlainText(selectText, selectText));
-        }
-        mSelectableTextHelper.reset();
-        toast("已复制");
+    private fun copy(selectText: String?) {
+        SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPop"))
+        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        cm.setPrimaryClip(ClipData.newPlainText(selectText, selectText))
+        mSelectableTextHelper!!.reset()
+        toast("已复制")
     }
 
     /**
      * 全选
      */
-    private void selectAll() {
-        SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissAllPop"));
+    private fun selectAll() {
+        SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPop"))
         if (null != mSelectableTextHelper) {
-            mSelectableTextHelper.selectAll();
+            mSelectableTextHelper!!.selectAll()
         }
     }
 
     /**
      * 转发
      */
-    private void forward(String content) {
-        SelectTextEventBus.getDefault().dispatch(new SelectTextEvent("dismissAllPop"));
-        // todo 转发
-        toast("转发");
+    private fun forward(content: String?) {
+        SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPop"))
+        toast("转发")
     }
 
-    private void toast(String msg) {
-        Toast.makeText(getContext().getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+    private fun toast(msg: String) {
+        Toast.makeText(context.applicationContext, msg, Toast.LENGTH_SHORT).show()
     }
-
 }

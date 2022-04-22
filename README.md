@@ -76,15 +76,17 @@ dependencies {
 ```java
 SelectTextHelper mSelectableTextHelper=new SelectTextHelper
     .Builder(textView)// 放你的textView到这里！！
-    .setCursorHandleColor(0xFF1379D6/*mContext.getResources().getColor(R.color.colorAccent)*/)// 游标颜色 default 0xFF1379D6
+    .setCursorHandleColor(0xFF1379D6/*ContextCompat.getColor(mContext, R.color.colorAccent)*/)// 游标颜色 default 0xFF1379D6
     .setCursorHandleSizeInDp(24)// 游标大小 单位dp default 24
-    .setSelectedColor(0xFFAFE1F4/*mContext.getResources().getColor(R.color.colorAccentTransparent)*/)// 选中文本的颜色 default 0xFFAFE1F4
+    .setSelectedColor(0xFFAFE1F4/*ContextCompat.getColor(mContext, R.color.colorAccentTransparent)*/)// 选中文本的颜色 default 0xFFAFE1F4
     .setSelectAll(true)// 初次选中是否全选 default true
     .setScrollShow(true)// 滚动时是否继续显示 default true
     .setSelectedAllNoPop(true)// 已经全选无弹窗，设置了true在监听会回调 onSelectAllShowCustomPop 方法 default false
     .setMagnifierShow(true)// 放大镜 default true
     .setPopSpanCount(5)// 设置操作弹窗每行个数 default 5
     .setPopStyle(R.drawable.shape_color_4c4c4c_radius_8/*操作弹窗背景*/, R.drawable.ic_arrow/*箭头图片*/)// 设置操作弹窗背景色、箭头图片
+    .setSelectTextLength(2)// 首次选中文本的长度，需要设置setSelectAll(false) default 2
+    .setPopDelay(100)// 弹窗延迟时间 default 100毫秒
     .addItem(0/*item的图标*/,"复制"/*item的描述*/,
     ()->Log.i("SelectTextHelper","复制")/*item的回调*/)// 操作弹窗的每个item
     .build();
@@ -213,7 +215,7 @@ public void handleSelector(SelectTextEvent event){
 
 - 重写`adapter`里的`onViewRecycled`方法，该方法在回收`View`时调用
 
-```java
+```kotlin
 @Override
 public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder){
     super.onViewRecycled(holder);
@@ -258,6 +260,18 @@ private final Runnable mShowSelectViewRunnable=
 
 - 去除超链接点击背景色（感谢技术支持 https://github.com/ITxiaoguang/SelectTextHelper/issues/2 ）
 
-```java
-textView.setHighlightColor(Color.TRANSPARENT);
+```kotlin
+textView.setHighlightColor(Color.TRANSPARENT)
+```
+
+- 对ImageSpan表情支持（感谢技术支持 https://github.com/ITxiaoguang/SelectTextHelper/issues/4 ）
+
+```kotlin
+val emojiMap: MutableMap<String, Int> = HashMap()
+emojiMap["\\[笑脸\\]"] = R.drawable.emoji_00
+emojiMap["\\[瘪嘴\\]"] = R.drawable.emoji_01
+emojiMap["\\[色\\]"] = R.drawable.emoji_02
+emojiMap["\\[瞪大眼\\]"] = R.drawable.emoji_03
+SelectTextHelper.putAllEmojiMap(emojiMap)
+SelectTextHelper.putEmojiMap("\\[酷\\]", R.drawable.emoji_04)
 ```
