@@ -28,8 +28,12 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
         private const val VIEW_TYPE_1 = 1 // 文本
         private const val VIEW_TYPE_2 = 2 // 图片
         private const val VIEW_TYPE_3 = 3 // 链接
-        private const val SHOW_DELAY = 100 // 显示自定义弹窗延迟
-        private const val RESET_DELAY = 120 // 重置自定义弹窗延迟
+
+        // 建议 SHOW_DELAY < RESET_DELAY
+        // 避免从一个自定义弹窗到另一个自定义弹窗过度时出现闪动的bug
+        // https://github.com/ITxiaoguang/SelectTextHelper/issues/5
+        private const val SHOW_DELAY = 100L // 显示自定义弹窗延迟
+        private const val RESET_DELAY = 130L // 重置自定义弹窗延迟
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -246,8 +250,8 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                 /**
                  * 点击回调
                  */
-                override fun onClick(v: View?) {
-                    clickTextView(textView.text.toString().trim { it <= ' ' })
+                override fun onClick(v: View?, originalContent: String?) {
+                    clickTextView(originalContent!!)
                 }
 
                 /**
@@ -260,7 +264,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                 /**
                  * 选中文本回调
                  */
-                override fun onTextSelected(content: CharSequence?) {
+                override fun onTextSelected(content: String?) {
                     selectedText = content.toString()
                 }
 
@@ -335,9 +339,9 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
          * 延迟显示CustomPop
          * 防抖
          */
-        private fun postShowCustomPop(duration: Int) {
+        private fun postShowCustomPop(duration: Long) {
             textView.removeCallbacks(mShowCustomPopRunnable)
-            textView.postDelayed(mShowCustomPopRunnable, duration.toLong())
+            textView.postDelayed(mShowCustomPopRunnable, duration)
         }
 
         private val mShowCustomPopRunnable =
@@ -347,9 +351,9 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
          * 延迟重置
          * 为了支持滑动不重置
          */
-        private fun postReset(duration: Int) {
+        private fun postReset(duration: Long) {
             textView.removeCallbacks(mShowSelectViewRunnable)
-            textView.postDelayed(mShowSelectViewRunnable, duration.toLong())
+            textView.postDelayed(mShowSelectViewRunnable, duration)
         }
 
         private fun removeShowSelectView() {

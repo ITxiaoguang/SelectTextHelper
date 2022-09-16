@@ -41,6 +41,7 @@ import java.util.regex.Pattern
 class SelectTextHelper(builder: Builder) {
     private var mTextView: TextView
 
+    private var mOriginalContent: String // 原本的文本
     private var mStartHandle: CursorHandle? = null // 开始操作标
     private var mEndHandle: CursorHandle? = null // 结束操作标
     private var mOperateWindow: OperateWindow? = null // 操作弹窗
@@ -77,6 +78,7 @@ class SelectTextHelper(builder: Builder) {
 
     init {
         mTextView = builder.mTextView
+        mOriginalContent = mTextView.text.toString()
         mContext = mTextView.context
         mSelectedColor = builder.mSelectedColor
         mCursorHandleColor = builder.mCursorHandleColor
@@ -353,9 +355,9 @@ class SelectTextHelper(builder: Builder) {
     }
 
     interface OnSelectListener {
-        fun onClick(v: View?) // 点击textView
+        fun onClick(v: View?, originalContent: String?) // 点击textView
         fun onLongClick(v: View?) // 长按textView
-        fun onTextSelected(content: CharSequence?) // 选中文本回调
+        fun onTextSelected(content: String?) // 选中文本回调
         fun onDismiss() // 解除弹窗回调
         fun onClickUrl(url: String?) // 点击文本里的url回调
         fun onSelectAllShowCustomPop() // 全选显示自定义弹窗回调
@@ -574,8 +576,16 @@ class SelectTextHelper(builder: Builder) {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun init() {
-        val spanStr = SpannableStringBuilder(mTextView.text.toString())
-        replaceText2Emoji(mContext, spanStr, mTextView.text.toString())
+        // 处理空格 把空格转成不间断空格
+        // 为什么处理2个，而不是1个呢？
+        // 避免英文单词出现断节
+        val newContent = mOriginalContent
+            // 半角空格(英文符号) 转 不间断空格
+            .replace("\u0020\u0020", "\u00A0\u00A0")
+            // 全角空格(中文符号) 转 不间断空格
+            .replace("\u3000\u3000", "\u00A0\u00A0")
+        val spanStr = SpannableStringBuilder(newContent)
+        replaceText2Emoji(mContext, spanStr, newContent)
 
         // 去除超链接点击背景色 https://github.com/ITxiaoguang/SelectTextHelper/issues/2
         mTextView.highlightColor = Color.TRANSPARENT
@@ -595,7 +605,7 @@ class SelectTextHelper(builder: Builder) {
             }
             reset()
             if (null != mSelectListener) {
-                mSelectListener!!.onClick(mTextView)
+                mSelectListener!!.onClick(mTextView, mOriginalContent)
             }
         }
         mTextView.setOnLongClickListener {
