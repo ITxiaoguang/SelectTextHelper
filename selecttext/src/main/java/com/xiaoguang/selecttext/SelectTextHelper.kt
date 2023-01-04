@@ -32,8 +32,7 @@ import java.util.*
 import java.util.regex.Pattern
 
 /**
- * Created by hxg on 21/9/13 929842234@qq.com
- *
+ * Created by hxg on 2021/9/13 929842234@qq.com
  *
  * 仿照的例子：https://github.com/laobie
  * 放大镜 Magnifier：https://developer.android.google.cn/guide/topics/text/magnifier
@@ -64,6 +63,7 @@ class SelectTextHelper(builder: Builder) {
     private val mPopBgResource: Int // 弹窗箭头
     private val mSelectTextLength: Int // 首次选择文字长度
     private val mPopDelay: Int // 弹窗延迟时间
+    private val mPopAnimationStyle: Int // 弹窗动画
     private val mPopArrowImg: Int // 弹窗箭头
     private val itemTextList: List<Pair<Int, String>> // 操作弹窗item文本
     private var itemListenerList: List<Builder.onSeparateItemClickListener> =
@@ -89,6 +89,7 @@ class SelectTextHelper(builder: Builder) {
         mPopBgResource = builder.mPopBgResource
         mSelectTextLength = builder.mSelectTextLength
         mPopDelay = builder.mPopDelay
+        mPopAnimationStyle = builder.mPopAnimationStyle
         mPopArrowImg = builder.mPopArrowImg
         mSelectedAllNoPop = builder.mSelectedAllNoPop
         itemTextList = builder.itemTextList
@@ -378,6 +379,7 @@ class SelectTextHelper(builder: Builder) {
         var mPopBgResource = 0
         var mSelectTextLength = DEFAULT_SELECTION_LENGTH
         var mPopDelay = DEFAULT_SHOW_DURATION
+        var mPopAnimationStyle = 0
         var mPopArrowImg = 0
         val itemTextList: MutableList<Pair<Int, String>> = LinkedList()
         val itemListenerList: MutableList<onSeparateItemClickListener> = LinkedList()
@@ -471,6 +473,14 @@ class SelectTextHelper(builder: Builder) {
             return this
         }
 
+        /**
+         * 弹窗动画
+         */
+        fun setPopAnimationStyle(popAnimationStyle: Int): Builder {
+            mPopAnimationStyle = popAnimationStyle
+            return this
+        }
+
         fun addItem(
             @DrawableRes drawableId: Int,
             @StringRes textResId: Int,
@@ -516,9 +526,7 @@ class SelectTextHelper(builder: Builder) {
     fun reset() {
         hideSelectView()
         resetSelectionInfo() // 重置弹窗回调
-        if (mSelectListener != null) {
-            mSelectListener!!.onReset()
-        }
+        mSelectListener?.onReset()
     }
 
     /**
@@ -528,15 +536,6 @@ class SelectTextHelper(builder: Builder) {
         get() = if (null != mOperateWindow) {
             mOperateWindow!!.isShowing
         } else false
-
-    /**
-     * 销毁操作弹窗
-     */
-    fun dismissOperateWindow() {
-        if (null != mOperateWindow) {
-            mOperateWindow!!.dismiss()
-        }
-    }
 
     /**
      * 选择文本监听
@@ -600,13 +599,11 @@ class SelectTextHelper(builder: Builder) {
                 usedClickListener = false
                 return@setOnClickListener
             }
-            if (null != mSelectListener && (null == mOperateWindow || !mOperateWindow!!.isShowing)) {
-                mSelectListener!!.onDismiss()
+            if (null == mOperateWindow || !mOperateWindow!!.isShowing) {
+                mSelectListener?.onDismiss()
             }
             reset()
-            if (null != mSelectListener) {
-                mSelectListener!!.onClick(mTextView, mOriginalContent)
-            }
+            mSelectListener?.onClick(mTextView, mOriginalContent)
         }
         mTextView.setOnLongClickListener {
             mTextView.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
@@ -640,19 +637,11 @@ class SelectTextHelper(builder: Builder) {
                 if (mScrollShow) {
                     if (!isHideWhenScroll && !isHide) {
                         isHideWhenScroll = true
-                        if (mOperateWindow != null) {
-                            mOperateWindow!!.dismiss()
-                        }
-                        if (mStartHandle != null) {
-                            mStartHandle!!.dismiss()
-                        }
-                        if (mEndHandle != null) {
-                            mEndHandle!!.dismiss()
-                        }
+                        mOperateWindow?.dismiss()
+                        mStartHandle?.dismiss()
+                        mEndHandle?.dismiss()
                     }
-                    if (null != mSelectListener) {
-                        mSelectListener!!.onScrolling()
-                    }
+                    mSelectListener?.onScrolling()
                 } else {
                     reset()
                 }
@@ -666,9 +655,7 @@ class SelectTextHelper(builder: Builder) {
             } else {
                 showSelectView(mTouchX, mTouchY)
             }
-            if (null != mSelectListener) {
-                mSelectListener!!.onLongClick(mTextView)
-            }
+            mSelectListener?.onLongClick(mTextView)
             true
         } // 此setMovementMethod可被修改
         mTextView.movementMethod = LinkMovementMethodInterceptor()
@@ -688,26 +675,16 @@ class SelectTextHelper(builder: Builder) {
         if (null != mOperateWindow) {
             showOperateWindow()
         }
-        if (mStartHandle != null) {
-            showCursorHandle(mStartHandle)
-        }
-        if (mEndHandle != null) {
-            showCursorHandle(mEndHandle)
-        }
+        mStartHandle?.let { showCursorHandle(mStartHandle) }
+        mEndHandle?.let { showCursorHandle(mEndHandle) }
     }
 
     private fun hideSelectView() {
         isHide = true
         usedClickListener = false
-        if (mStartHandle != null) {
-            mStartHandle!!.dismiss()
-        }
-        if (mEndHandle != null) {
-            mEndHandle!!.dismiss()
-        }
-        if (mOperateWindow != null) {
-            mOperateWindow!!.dismiss()
-        }
+        mStartHandle?.dismiss()
+        mEndHandle?.dismiss()
+        mOperateWindow?.dismiss()
     }
 
     private fun resetSelectionInfo() {
@@ -785,9 +762,7 @@ class SelectTextHelper(builder: Builder) {
         } // 开启已经全选无弹窗
         if (mSelectedAllNoPop && mSelectionInfo.mSelectionContent == mTextView.text.toString()) {
             mOperateWindow!!.dismiss()
-            if (mSelectListener != null) {
-                mSelectListener!!.onSelectAllShowCustomPop()
-            }
+            mSelectListener?.onSelectAllShowCustomPop()
         } else {
             mOperateWindow!!.show()
         }
@@ -853,9 +828,7 @@ class SelectTextHelper(builder: Builder) {
             mSpannable!!.setSpan(
                 mSpan, mSelectionInfo.mStart, mSelectionInfo.mEnd, Spanned.SPAN_INCLUSIVE_EXCLUSIVE
             )
-            if (mSelectListener != null) {
-                mSelectListener!!.onTextSelected(mSelectionInfo.mSelectionContent)
-            }
+            mSelectListener?.onTextSelected(mSelectionInfo.mSelectionContent)
 
             // 设置图片表情选中背景
             setEmojiBackground()
@@ -952,6 +925,10 @@ class SelectTextHelper(builder: Builder) {
                 false
             )
             mWindow.isClippingEnabled = false
+            // 动画
+            if (0 != mPopAnimationStyle) {
+                mWindow.animationStyle = mPopAnimationStyle
+            }
             listAdapter = SelectTextPopAdapter(context!!, itemTextList)
             listAdapter.setOnclickItemListener(object : onClickItemListener {
                 override fun onClick(position: Int) {
@@ -959,9 +936,7 @@ class SelectTextHelper(builder: Builder) {
                     itemListenerList[position].onClick()
                 }
             })
-            if (rvContent != null) {
-                rvContent.adapter = listAdapter
-            }
+            rvContent.adapter = listAdapter
         }
 
         fun show() {
@@ -1022,9 +997,7 @@ class SelectTextHelper(builder: Builder) {
 
         fun dismiss() {
             mWindow!!.dismiss()
-            if (null != mSelectListener) {
-                mSelectListener!!.onDismissCustomPop()
-            }
+            mSelectListener?.onDismissCustomPop()
         }
 
         val isShowing: Boolean
@@ -1101,9 +1074,7 @@ class SelectTextHelper(builder: Builder) {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     mOperateWindow!!.dismiss()
-                    if (null != mSelectListener) {
-                        mSelectListener!!.onDismissCustomPop()
-                    }
+                    mSelectListener?.onDismissCustomPop()
                     val rawX = event.rawX.toInt()
                     val rawY = event.rawY.toInt() // x y不准 x 减去textView距离x轴距离值  y减去字体大小的像素值
                     update(

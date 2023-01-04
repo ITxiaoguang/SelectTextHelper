@@ -222,6 +222,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                 .setMagnifierShow(true) // 放大镜 default true
                 .setSelectTextLength(2)// 首次选中文本的长度 default 2
                 .setPopDelay(100)// 弹窗延迟时间 default 100毫秒
+                .setPopAnimationStyle(R.style.Base_Animation_AppCompat_Dialog)// 弹窗动画 default 无动画
                 .addItem(R.drawable.ic_msg_copy,
                     R.string.copy,
                     object : SelectTextHelper.Builder.onSeparateItemClickListener {
@@ -265,7 +266,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                  * 选中文本回调
                  */
                 override fun onTextSelected(content: String?) {
-                    selectedText = content.toString()
+                    selectedText = content
                 }
 
                 /**

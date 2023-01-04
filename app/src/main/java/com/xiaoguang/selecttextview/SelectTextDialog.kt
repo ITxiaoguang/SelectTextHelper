@@ -74,10 +74,10 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
                 })
             .build()
         mSelectableTextHelper!!.setSelectListener(object : OnSelectListener {
-            override fun onClick(v: View?) {}
+            override fun onClick(v: View?, originalContent: String?) {}
             override fun onLongClick(v: View?) {}
-            override fun onTextSelected(content: CharSequence?) {
-                selectText = content.toString()
+            override fun onTextSelected(content: String?) {
+                selectText = content
             }
 
             override fun onDismiss() {

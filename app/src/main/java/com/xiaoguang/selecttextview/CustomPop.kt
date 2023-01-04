@@ -149,6 +149,8 @@ class CustomPop(
             // 这个是为了点击“返回Back”也能使其消失，并且并不会影响你的背景
             popupWindow!!.setBackgroundDrawable(BitmapDrawable())
         }
+        // 动画
+        popupWindow?.animationStyle = R.style.Base_Animation_AppCompat_Dialog
     }
 
     private fun updateListView() {
