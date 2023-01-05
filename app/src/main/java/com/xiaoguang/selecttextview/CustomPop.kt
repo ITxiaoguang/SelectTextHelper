@@ -14,9 +14,9 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.xiaoguang.selecttext.SelectTextHelper
 import com.xiaoguang.selecttext.SelectTextPopAdapter
 import com.xiaoguang.selecttext.SelectTextPopAdapter.onClickItemListener
+import com.xiaoguang.selecttext.SelectUtils
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.util.*
@@ -84,7 +84,7 @@ class CustomPop(
         if (null != rv_content && null != iv_arrow) {
             rv_content!!.setBackgroundResource(bgColor)
             iv_arrow!!.setBackgroundResource(arrowImg)
-            SelectTextHelper.Companion.setWidthHeight(iv_arrow!!, dp2px(14), dp2px(7))
+            SelectUtils.Companion.setWidthHeight(iv_arrow!!, dp2px(14), dp2px(7))
         }
     }
 
@@ -159,9 +159,9 @@ class CustomPop(
             rv_content!!.adapter = listAdapter
         }
         val size = itemTextList!!.size
-        val deviceWidth = SelectTextHelper.Companion.displayWidth
-        val deviceHeight = SelectTextHelper.Companion.displayHeight
-        val statusHeight = SelectTextHelper.Companion.statusHeight
+        val deviceWidth = SelectUtils.Companion.displayWidth
+        val deviceHeight = SelectUtils.Companion.displayHeight
+        val statusHeight = SelectUtils.Companion.statusHeight
         //计算箭头显示的位置
         val location = IntArray(2)
         msgView.getLocationOnScreen(location)

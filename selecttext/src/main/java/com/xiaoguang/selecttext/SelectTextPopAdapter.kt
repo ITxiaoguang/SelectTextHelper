@@ -1,6 +1,5 @@
 package com.xiaoguang.selecttext
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Pair
 import android.view.LayoutInflater
@@ -39,7 +38,6 @@ class SelectTextPopAdapter(
         return ViewHolder(view)
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val drawableId = mList!![position].first
         val text = mList[position].second
@@ -47,12 +45,8 @@ class SelectTextPopAdapter(
             val params = holder.tv_pop_func.layoutParams
             params.width = ViewGroup.LayoutParams.WRAP_CONTENT
             holder.tv_pop_func.layoutParams = params
-            holder.tv_pop_func.setPadding(
-                SelectTextHelper.dp2px(8f),
-                0,
-                SelectTextHelper.dp2px(8f),
-                0
-            )
+            holder.tv_pop_func.setPadding(SelectUtils.dp2px(8f), 0,
+                SelectUtils.dp2px(8f), 0)
         }
         holder.iv_pop_icon.setBackgroundResource(drawableId)
         holder.tv_pop_func.text = text

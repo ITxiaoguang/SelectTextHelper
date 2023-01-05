@@ -2,7 +2,6 @@ package com.xiaoguang.selecttext
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.Resources
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -57,17 +56,16 @@ class SelectTextHelper(builder: Builder) {
     private val mCursorHandleSize: Int // 游标大小
     private val mSelectAll: Boolean // 全选
     private val mSelectedAllNoPop: Boolean // 已经全选无弹窗
+    private val mSelectTextLength: Int // 首次选择文字长度
     private val mScrollShow: Boolean // 滑动依然显示弹窗
     private val mMagnifierShow: Boolean // 显示放大镜
     private val mPopSpanCount: Int // 弹窗每行个数
     private val mPopBgResource: Int // 弹窗箭头
-    private val mSelectTextLength: Int // 首次选择文字长度
     private val mPopDelay: Int // 弹窗延迟时间
     private val mPopAnimationStyle: Int // 弹窗动画
     private val mPopArrowImg: Int // 弹窗箭头
     private val itemTextList: List<Pair<Int, String>> // 操作弹窗item文本
-    private var itemListenerList: List<Builder.onSeparateItemClickListener> =
-        LinkedList() // 操作弹窗item监听
+    private var itemListenerList: List<Builder.onSeparateItemClickListener> = LinkedList() // 操作弹窗item监听
     private var mSpan: BackgroundColorSpan? = null
     private var isHideWhenScroll = false
     private var isHide = true
@@ -85,16 +83,16 @@ class SelectTextHelper(builder: Builder) {
         mSelectAll = builder.mSelectAll
         mScrollShow = builder.mScrollShow
         mMagnifierShow = builder.mMagnifierShow
+        mSelectedAllNoPop = builder.mSelectedAllNoPop
+        mSelectTextLength = builder.mSelectTextLength
         mPopSpanCount = builder.mPopSpanCount
         mPopBgResource = builder.mPopBgResource
-        mSelectTextLength = builder.mSelectTextLength
         mPopDelay = builder.mPopDelay
         mPopAnimationStyle = builder.mPopAnimationStyle
         mPopArrowImg = builder.mPopArrowImg
-        mSelectedAllNoPop = builder.mSelectedAllNoPop
         itemTextList = builder.itemTextList
         itemListenerList = builder.itemListenerList
-        mCursorHandleSize = dp2px(builder.mCursorHandleSizeInDp)
+        mCursorHandleSize = SelectUtils.dp2px(builder.mCursorHandleSizeInDp)
         init()
     }
 
@@ -130,9 +128,7 @@ class SelectTextHelper(builder: Builder) {
          * @param stringBuilder SpannableStringBuilder text
          * @param content       Target content
          */
-        fun replaceText2Emoji(
-            context: Context?, stringBuilder: SpannableStringBuilder, content: String
-        ) {
+        fun replaceText2Emoji(context: Context?, stringBuilder: SpannableStringBuilder, content: String) {
             if (emojiMap.isEmpty()) {
                 return
             }
@@ -151,208 +147,6 @@ class SelectTextHelper(builder: Builder) {
             }
         }
 
-        // util
-        fun getPreciseOffset(textView: TextView, x: Int, y: Int): Int {
-            val layout = textView.layout
-            return if (layout != null) {
-                val topVisibleLine = layout.getLineForVertical(y)
-                val offset = layout.getOffsetForHorizontal(topVisibleLine, x.toFloat())
-                val offsetX = layout.getPrimaryHorizontal(offset).toInt()
-                if (offsetX > x) {
-                    layout.getOffsetToLeftOf(offset)
-                } else {
-                    offset
-                }
-            } else {
-                -1
-            }
-        }
-
-        fun getHysteresisOffset(textView: TextView, x: Int, y: Int, previousOffset: Int): Int {
-            var previousOffsetCopy = previousOffset
-            val layout = textView.layout ?: return -1
-            var line = layout.getLineForVertical(y)
-
-            // The "HACK BLOCK"S in this function is required because of how Android Layout for
-            // TextView works - if 'offset' equals to the last character of a line, then
-            //
-            // * getLineForOffset(offset) will result the NEXT line
-            // * getPrimaryHorizontal(offset) will return 0 because the next insertion point is on the next line
-            // * getOffsetForHorizontal(line, x) will not return the last offset of a line no matter where x is
-            // These are highly undesired and is worked around with the HACK BLOCK
-            //
-            // @see Moon+ Reader/Color Note - see how it can't select the last character of a line unless you move
-            // the cursor to the beginning of the next line.
-            //
-            ////////////////////HACK BLOCK////////////////////////////////////////////////////
-            if (isEndOfLineOffset(
-                    layout, previousOffsetCopy
-                )
-            ) { // we have to minus one from the offset so that the code below to find
-                // the previous line can work correctly.
-                val left = layout.getPrimaryHorizontal(previousOffsetCopy - 1).toInt()
-                val right = layout.getLineRight(line).toInt()
-                val threshold = (right - left) / 2 // half the width of the last character
-                if (x > right - threshold) {
-                    previousOffsetCopy -= 1
-                }
-            } ///////////////////////////////////////////////////////////////////////////////////
-            val previousLine = layout.getLineForOffset(previousOffsetCopy)
-            val previousLineTop = layout.getLineTop(previousLine)
-            val previousLineBottom = layout.getLineBottom(previousLine)
-            val hysteresisThreshold = (previousLineBottom - previousLineTop) / 2
-
-            // If new line is just before or after previous line and y position is less than
-            // hysteresisThreshold away from previous line, keep cursor on previous line.
-            if (line == previousLine + 1 && y - previousLineBottom < hysteresisThreshold || line == previousLine - 1 && (previousLineTop - y) < hysteresisThreshold) {
-                line = previousLine
-            }
-            var offset = layout.getOffsetForHorizontal(line, x.toFloat())
-
-            // This allow the user to select the last character of a line without moving the
-            // cursor to the next line. (As Layout.getOffsetForHorizontal does not return the
-            // offset of the last character of the specified line)
-            //
-            // But this function will probably get called again immediately, must decrement the offset
-            // by 1 to compensate for the change made below. (see previous HACK BLOCK)
-            /////////////////////HACK BLOCK///////////////////////////////////////////////////
-            if (offset < textView.text.length - 1) {
-                if (isEndOfLineOffset(layout, offset + 1)) {
-                    val left = layout.getPrimaryHorizontal(offset).toInt()
-                    val right = layout.getLineRight(line).toInt()
-                    val threshold = (right - left) / 2 // half the width of the last character
-                    if (x > right - threshold) {
-                        offset += 1
-                    }
-                }
-            } //////////////////////////////////////////////////////////////////////////////////
-            return offset
-        }
-
-        private fun isEndOfLineOffset(layout: Layout, offset: Int): Boolean {
-            return offset > 0 && layout.getLineForOffset(offset) == layout.getLineForOffset(offset - 1) + 1
-        }
-
-        @JvmStatic
-        val displayWidth: Int
-            get() = Resources.getSystem().displayMetrics.widthPixels
-
-        @JvmStatic
-        val displayHeight: Int
-            get() = Resources.getSystem().displayMetrics.heightPixels
-
-        fun dp2px(dpValue: Float): Int {
-            return (dpValue * Resources.getSystem().displayMetrics.density + 0.5f).toInt()
-        }
-
-        /**
-         * 设置宽高
-         *
-         * @param v
-         * @param w
-         * @param h
-         */
-        @JvmStatic
-        fun setWidthHeight(v: View, w: Int, h: Int) {
-            val params = v.layoutParams
-            params.width = w
-            params.height = h
-            v.layoutParams = params
-        }
-
-        /**
-         * 通知栏的高度
-         */
-        private var STATUS_HEIGHT = 0
-
-        /**
-         * 获取通知栏的高度
-         */
-        @JvmStatic
-        val statusHeight: Int
-            get() {
-                if (0 != STATUS_HEIGHT) {
-                    return STATUS_HEIGHT
-                }
-                val resid =
-                    Resources.getSystem().getIdentifier("status_bar_height", "dimen", "android")
-                if (resid > 0) {
-                    STATUS_HEIGHT = Resources.getSystem().getDimensionPixelSize(resid)
-                    return STATUS_HEIGHT
-                }
-                return -1
-            }
-
-        /**
-         * 反射获取对象属性值
-         */
-        fun getFieldValue(obj: Any?, fieldName: String?): Any? {
-            if (obj == null || TextUtils.isEmpty(fieldName)) {
-                return null
-            }
-            var clazz: Class<*> = obj.javaClass
-            while (clazz != Any::class.java) {
-                try {
-                    val field = clazz.getDeclaredField(fieldName!!)
-                    field.isAccessible = true
-                    return field[obj]
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                clazz = clazz.superclass
-            }
-            return null
-        }
-
-        /**
-         * 判断是否为emoji表情符
-         *
-         * @param c 字符
-         * @return 是否为emoji字符
-         */
-        fun isEmojiText(c: Char): Boolean {
-            return !(c.code == 0x0 || c.code == 0x9 || c.code == 0xA || c.code == 0xD || c.code in 0x20..0xD7FF || c.code in 0xE000..0xFFFD || c.code in 0x100000..0x10FFFF)
-        }
-
-        /**
-         * 利用反射检测文本是否是ImageSpan文本
-         */
-        private fun isImageSpanText(mSpannable: Spannable): Boolean {
-            if (TextUtils.isEmpty(mSpannable)) {
-                return false
-            }
-            try {
-                val mSpans = getFieldValue(mSpannable, "mSpans") as Array<*>?
-                if (null != mSpans) {
-                    for (mSpan in mSpans) {
-                        if (mSpan is SelectImageSpan) {
-                            return true
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            return false
-        }
-
-        /**
-         * 匹配Image
-         *
-         * @param content Target content
-         */
-        fun matchImageSpan(content: String): Boolean {
-            if (emojiMap.isEmpty()) {
-                return false
-            }
-            for ((key) in emojiMap) {
-                val matcher = Pattern.compile(key).matcher(content)
-                if (matcher.find()) {
-                    return true
-                }
-            }
-            return false
-        }
     }
 
     interface OnSelectListener {
@@ -373,11 +167,11 @@ class SelectTextHelper(builder: Builder) {
         var mCursorHandleSizeInDp = 24f
         var mSelectAll = true
         var mSelectedAllNoPop = false
+        var mSelectTextLength = DEFAULT_SELECTION_LENGTH
         var mScrollShow = true
         var mMagnifierShow = true
         var mPopSpanCount = 5
         var mPopBgResource = 0
-        var mSelectTextLength = DEFAULT_SELECTION_LENGTH
         var mPopDelay = DEFAULT_SHOW_DURATION
         var mPopAnimationStyle = 0
         var mPopArrowImg = 0
@@ -425,6 +219,14 @@ class SelectTextHelper(builder: Builder) {
         }
 
         /**
+         * 选择选择个数
+         */
+        fun setSelectTextLength(selectTextLength: Int): Builder {
+            mSelectTextLength = selectTextLength
+            return this
+        }
+
+        /**
          * 滑动依然显示弹窗
          */
         fun setScrollShow(scrollShow: Boolean): Builder {
@@ -454,14 +256,6 @@ class SelectTextHelper(builder: Builder) {
         fun setPopStyle(popBgResource: Int, popArrowImg: Int): Builder {
             mPopBgResource = popBgResource
             mPopArrowImg = popArrowImg
-            return this
-        }
-
-        /**
-         * 选择选择个数
-         */
-        fun setSelectTextLength(selectTextLength: Int): Builder {
-            mSelectTextLength = selectTextLength
             return this
         }
 
@@ -525,7 +319,8 @@ class SelectTextHelper(builder: Builder) {
      */
     fun reset() {
         hideSelectView()
-        resetSelectionInfo() // 重置弹窗回调
+        resetSelectionInfo()
+        // 重置弹窗回调
         mSelectListener?.onReset()
     }
 
@@ -616,7 +411,8 @@ class SelectTextHelper(builder: Builder) {
                 if (isHideWhenScroll) {
                     isHideWhenScroll = false
                     postShowSelectView(mPopDelay)
-                } // 拿textView的x坐标
+                }
+                // 拿textView的x坐标
                 if (0 == mTextViewMarginStart) {
                     val location = IntArray(2)
                     mTextView.getLocationInWindow(location)
@@ -657,7 +453,8 @@ class SelectTextHelper(builder: Builder) {
             }
             mSelectListener?.onLongClick(mTextView)
             true
-        } // 此setMovementMethod可被修改
+        }
+        // 此setMovementMethod可被修改
         mTextView.movementMethod = LinkMovementMethodInterceptor()
     }
 
@@ -705,7 +502,7 @@ class SelectTextHelper(builder: Builder) {
         isHide = false
         if (mStartHandle == null) mStartHandle = CursorHandle(true)
         if (mEndHandle == null) mEndHandle = CursorHandle(false)
-        val startOffset = getPreciseOffset(mTextView, x, y)
+        val startOffset = SelectUtils.getPreciseOffset(mTextView, x, y)
         var endOffset = startOffset + mSelectTextLength
         if (mTextView.text is Spannable) {
             mSpannable = mTextView.text as Spannable
@@ -732,19 +529,21 @@ class SelectTextHelper(builder: Builder) {
     private fun changeEndOffset(startOffset: Int, endOffset: Int): Int {
         var endOffsetCopy = endOffset
         var selectText =
-            mSpannable!!.subSequence(startOffset, endOffsetCopy) as Spannable // 是否ImageSpan文本
-        if (isImageSpanText(selectText)) { // 是否匹配Image
-            while (!matchImageSpan(selectText.toString())) {
+            mSpannable!!.subSequence(startOffset, endOffsetCopy) as Spannable
+        // 是否ImageSpan文本
+        if (SelectUtils.isImageSpanText(selectText)) {
+            // 是否匹配Image
+            while (!SelectUtils.matchImageSpan(selectText.toString())) {
                 endOffsetCopy++
                 selectText = mSpannable!!.subSequence(startOffset, endOffsetCopy) as Spannable
             }
-        } // 选中的文字倒数第二个是文字 且 倒数第一个字符是文字emoji
+        }
+        // 选中的文字倒数第二个是文字 且 倒数第一个字符是文字emoji
         // 则去除最后的文字emoji字符
         val selectTextString = selectText.toString()
         if (selectTextString.length > 1) {
-            if (!isEmojiText(selectTextString[selectTextString.length - 2]) && isEmojiText(
-                    selectTextString[selectTextString.length - 1]
-                )
+            if (!SelectUtils.isEmojiText(selectTextString[selectTextString.length - 2])
+                && SelectUtils.isEmojiText(selectTextString[selectTextString.length - 1])
             ) {
                 endOffsetCopy--
             }
@@ -844,17 +643,11 @@ class SelectTextHelper(builder: Builder) {
         }
 
         // 前部 透明背景
-        setEmojiBackground(
-            mSpannable!!.subSequence(0, mSelectionInfo.mStart) as Spannable, Color.TRANSPARENT
-        ) // 中间 选择背景
-        setEmojiBackground(
-            mSpannable!!.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd) as Spannable,
-            mSelectedColor
-        ) // 尾部 透明背景
-        setEmojiBackground(
-            mSpannable!!.subSequence(mSelectionInfo.mEnd, mSpannable!!.length) as Spannable,
-            Color.TRANSPARENT
-        )
+        setEmojiBackground(mSpannable!!.subSequence(0, mSelectionInfo.mStart) as Spannable, Color.TRANSPARENT)
+        // 中间 选择背景
+        setEmojiBackground(mSpannable!!.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd) as Spannable, mSelectedColor)
+        // 尾部 透明背景
+        setEmojiBackground(mSpannable!!.subSequence(mSelectionInfo.mEnd, mSpannable!!.length) as Spannable, Color.TRANSPARENT)
     }
 
     /**
@@ -867,13 +660,12 @@ class SelectTextHelper(builder: Builder) {
         if (TextUtils.isEmpty(mSpannable)) {
             return
         }
-        val mSpans = getFieldValue(mSpannable, "mSpans") as Array<*>?
+        val mSpans = SelectUtils.getFieldValue(mSpannable, "mSpans") as Array<*>?
         if (null != mSpans) {
             for (mSpan in mSpans) {
                 if (mSpan is SelectImageSpan) {
-                    val imageSpan = mSpan
-                    if (imageSpan.bgColor != bgColor) {
-                        imageSpan.bgColor = bgColor
+                    if (mSpan.bgColor != bgColor) {
+                        mSpan.bgColor = bgColor
                     }
                 }
             }
@@ -913,11 +705,14 @@ class SelectTextHelper(builder: Builder) {
             if (0 != mPopArrowImg) {
                 ivArrow.setBackgroundResource(mPopArrowImg)
             }
-            val size = itemTextList.size // 宽 个数超过mPopSpanCount 取 mPopSpanCount
-            mWidth = dp2px((12 * 4 + 52 * size.coerceAtMost(mPopSpanCount)).toFloat()) // 行数
+            val size = itemTextList.size
+            // 宽 个数超过mPopSpanCount 取 mPopSpanCount
+            mWidth = SelectUtils.dp2px((12 * 4 + 52 * size.coerceAtMost(mPopSpanCount)).toFloat())
+            // 行数
             val row = (size / mPopSpanCount // 行数
-                    + if (size % mPopSpanCount == 0) 0 else 1) // 有余数 加一行 // 高
-            mHeight = dp2px((12 * (1 + row) + 52 * row + 5).toFloat())
+                    + if (size % mPopSpanCount == 0) 0 else 1) // 有余数 加一行
+            // 高
+            mHeight = SelectUtils.dp2px((12 * (1 + row) + 52 * row + 5).toFloat())
             mWindow = PopupWindow(
                 contentView,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -940,7 +735,7 @@ class SelectTextHelper(builder: Builder) {
         }
 
         fun show() {
-            val deviceWidth = displayWidth
+            val deviceWidth = SelectUtils.displayWidth
             val size = itemTextList.size
             if (size > mPopSpanCount) {
                 rvContent!!.layoutManager =
@@ -964,7 +759,8 @@ class SelectTextHelper(builder: Builder) {
                 val endX = layout.getPrimaryHorizontal(mSelectionInfo.mEnd)
                     .toInt() + mTempCoors[0] // posX = (起始点 + 终点) / 2 - (向左移动 mWidth / 2)
                 (startX + endX) / 2 - mWidth / 2
-            } else { // posX = (起始点 + (文本左边距  + 文本宽度                - 文本右padding)) / 2         - (向左移动 mWidth / 2)
+            } else {
+                // posX = (起始点 + (文本左边距  + 文本宽度                - 文本右padding)) / 2         - (向左移动 mWidth / 2)
                 (startX + (mTempCoors[0] + mTextView.width - mTextView.paddingRight)) / 2 - mWidth / 2
             }
             if (posX <= 0) {
@@ -975,22 +771,24 @@ class SelectTextHelper(builder: Builder) {
                 posX = deviceWidth - mWidth
             }
             mWindow!!.showAtLocation(mTextView, Gravity.NO_GRAVITY, posX, posY) // view中心位置
-            var arrowTranslationX: Int // 在中间
-            arrowTranslationX = when {
-                posXTemp == 0 -> { // - dp2px(mContext, 16) 是 的margin
-                    mWidth / 2 - dp2px(16f)
+            // 在中间
+            var arrowTranslationX = when {
+                posXTemp == 0 -> {
+                    // - SelectUtils.dp2px(mContext, 16) 是 margin
+                    mWidth / 2 - SelectUtils.dp2px(16f)
                 }
                 posXTemp < 0 -> {
                     posXTemp + mWidth / 2
                 }
-                else -> { // arrowTranslationX = 两坐标中心点   - 弹窗左侧点 - iv_arrow的margin
-                    posXTemp + mWidth / 2 - posX - dp2px(16f)
+                else -> {
+                    // arrowTranslationX = 两坐标中心点   - 弹窗左侧点 - iv_arrow的margin
+                    posXTemp + mWidth / 2 - posX - SelectUtils.dp2px(16f)
                 }
             }
-            if (arrowTranslationX < dp2px(4f)) {
-                arrowTranslationX = dp2px(4f)
-            } else if (arrowTranslationX > mWidth - dp2px(4f)) {
-                arrowTranslationX = mWidth - dp2px(4f)
+            if (arrowTranslationX < SelectUtils.dp2px(4f)) {
+                arrowTranslationX = SelectUtils.dp2px(4f)
+            } else if (arrowTranslationX > mWidth - SelectUtils.dp2px(4f)) {
+                arrowTranslationX = mWidth - SelectUtils.dp2px(4f)
             }
             ivArrow.translationX = arrowTranslationX.toFloat()
         }
@@ -1025,28 +823,24 @@ class SelectTextHelper(builder: Builder) {
         }
 
         override fun onDraw(canvas: Canvas) {
-            canvas.drawCircle(
-                (mCircleRadius + mPadding).toFloat(),
+            canvas.drawCircle((mCircleRadius + mPadding).toFloat(),
                 mCircleRadius.toFloat(),
                 mCircleRadius.toFloat(),
-                mPaint
-            )
+                mPaint)
             if (isLeft) {
                 canvas.drawRect(
                     (mCircleRadius + mPadding).toFloat(),
                     0f,
                     (mCircleRadius * 2 + mPadding).toFloat(),
                     mCircleRadius.toFloat(),
-                    mPaint
-                )
+                    mPaint)
             } else {
                 canvas.drawRect(
                     mPadding.toFloat(),
                     0f,
                     (mCircleRadius + mPadding).toFloat(),
                     mCircleRadius.toFloat(),
-                    mPaint
-                )
+                    mPaint)
             }
         }
 
@@ -1066,7 +860,8 @@ class SelectTextHelper(builder: Builder) {
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     showOperateWindow()
-                    if (mMagnifierShow) { // android 9 放大镜
+                    if (mMagnifierShow) {
+                        // android 9 放大镜
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && null != mMagnifier) {
                             mMagnifier!!.dismiss()
                         }
@@ -1076,12 +871,14 @@ class SelectTextHelper(builder: Builder) {
                     mOperateWindow!!.dismiss()
                     mSelectListener?.onDismissCustomPop()
                     val rawX = event.rawX.toInt()
-                    val rawY = event.rawY.toInt() // x y不准 x 减去textView距离x轴距离值  y减去字体大小的像素值
+                    val rawY = event.rawY.toInt()
+                    // x y不准 x 减去textView距离x轴距离值  y减去字体大小的像素值
                     update(
                         rawX + mAdjustX - mWidth - mTextViewMarginStart,
                         rawY + mAdjustY - mHeight - mTextView.textSize.toInt()
                     )
-                    if (mMagnifierShow) { // android 9 放大镜功能
+                    if (mMagnifierShow) {
+                        // android 9 放大镜功能
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                             if (null == mMagnifier) {
                                 mMagnifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -1093,7 +890,7 @@ class SelectTextHelper(builder: Builder) {
                             val viewPosition = IntArray(2)
                             mTextView.getLocationOnScreen(viewPosition)
                             val magnifierX = rawX - viewPosition[0]
-                            val magnifierY = rawY - viewPosition[1] - dp2px(32f)
+                            val magnifierY = rawY - viewPosition[1] - SelectUtils.dp2px(32f)
                             mMagnifier!!.show(
                                 magnifierX.toFloat(), magnifierY.coerceAtLeast(0).toFloat()
                             )
@@ -1123,7 +920,7 @@ class SelectTextHelper(builder: Builder) {
                 mSelectionInfo.mEnd
             }
             yCopy -= mTempCoors[1]
-            val offset = getHysteresisOffset(mTextView, x, yCopy, oldOffset)
+            val offset = SelectUtils.getHysteresisOffset(mTextView, x, yCopy, oldOffset)
             if (offset != oldOffset) {
                 resetSelectionInfo()
                 if (isLeft) {
@@ -1172,11 +969,8 @@ class SelectTextHelper(builder: Builder) {
                 // 把右游标水平坐标定位在减去一个字的线条右侧
                 // 把右游标底部线坐标定位在上一行
                 if (mSelectionInfo.mEnd != 0 && horizontalEnd == 0) {
-                    horizontalEnd =
-                        layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
-                            .toInt()
-                    lineBottomEnd =
-                        layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
+                    horizontalEnd = layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1)).toInt()
+                    lineBottomEnd = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
                 }
                 mPopupWindow.update(horizontalEnd + extraX, lineBottomEnd + extraY, -1, -1)
             }
@@ -1215,9 +1009,7 @@ class SelectTextHelper(builder: Builder) {
      */
     private inner class LinkMovementMethodInterceptor : LinkMovementMethod() {
         private var downLinkTime: Long = 0
-        override fun onTouchEvent(
-            widget: TextView, buffer: Spannable, event: MotionEvent
-        ): Boolean {
+        override fun onTouchEvent(widget: TextView, buffer: Spannable, event: MotionEvent): Boolean {
             val action = event.action
             if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
                 var x = event.x.toInt()

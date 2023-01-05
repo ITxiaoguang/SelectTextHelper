@@ -3,7 +3,7 @@
 ## [掘金地址](https://juejin.cn/post/7008080194116255752) [github地址](https://github.com/ITxiaoguang/SelectTextHelper)
 
 `SelectTextHelper`打造一个全网最逼近微信聊天消息自由复制，双击查看文本内容框架。 汇聚底层`TextView`框架、原理并加以整理得出的一个实用的`Helper`。
-仅用两个类实现便实现如此强大的功能，用法也超级简单。
+使用起来超级简单。
 
 [![](https://jitpack.io/v/ITxiaoguang/SelectTextHelper.svg)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
 
@@ -23,6 +23,7 @@
 ## 特点功能:
 
 - 支持自由选择文本
+- 支持选择Emoji表情和ImageSpan自定义表情
 - 支持自定义文本有：游标颜色、游标大小、选中文本颜色
 - 支持默认全选文字或选2个文字
 - 支持滑动依然显示弹窗
