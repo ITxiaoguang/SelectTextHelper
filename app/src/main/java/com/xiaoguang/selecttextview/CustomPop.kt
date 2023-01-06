@@ -28,8 +28,8 @@ import java.util.*
 class CustomPop(
     private val context: Context,
     private val msgView: View,
-    private val isText: Boolean
-) : PopupWindow() {
+    private val isText: Boolean) : PopupWindow() {
+
     private var rv_content: RecyclerView? = null
     private var iv_arrow_up: ImageView? = null
     private var iv_arrow: ImageView? = null
@@ -37,8 +37,8 @@ class CustomPop(
     private val itemListenerList: MutableList<onSeparateItemClickListener> = LinkedList()
     private var listAdapter: SelectTextPopAdapter? = null
     private var popupWindow: PopupWindow? = null
-    private var mWidth = 0// 本pop的宽
-    private var mHeight = 0// 本pop的高
+    private var mWidth = 0  // 本pop的宽
+    private var mHeight = 0 // 本pop的高
 
     /**
      * 图标 和 文字
@@ -115,7 +115,7 @@ class CustomPop(
         listAdapter = SelectTextPopAdapter(context, itemTextList)
         listAdapter!!.setOnclickItemListener(object : onClickItemListener {
             override fun onClick(position: Int) {
-                SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPop"))
+                SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
                 dismiss()
                 itemListenerList[position].onClick()
             }
@@ -132,8 +132,8 @@ class CustomPop(
                 false
             )
             popupWindow!!.isClippingEnabled = false
-            if (!SelectTextEventBus.default.isRegistered(this)) {
-                SelectTextEventBus.default.register(this, SelectTextEvent::class.java)
+            if (!SelectTextEventBus.instance.isRegistered(this)) {
+                SelectTextEventBus.instance.register(this, SelectTextEvent::class.java)
             }
         } else {
             popupWindow = PopupWindow(
@@ -248,7 +248,7 @@ class CustomPop(
 
     override fun dismiss() {
         popupWindow!!.dismiss()
-        SelectTextEventBus.default.unregister(this)
+        SelectTextEventBus.instance.unregister(this)
     }
 
     companion object {

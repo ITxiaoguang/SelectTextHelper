@@ -18,8 +18,7 @@ class SelectTextEventBus {
         @Volatile
         private var defaultInstance: SelectTextEventBus? = null
 
-        @JvmStatic
-        val default: SelectTextEventBus
+        val instance: SelectTextEventBus
             get() {
                 if (defaultInstance == null) {
                     synchronized(SelectTextEventBus::class.java) {

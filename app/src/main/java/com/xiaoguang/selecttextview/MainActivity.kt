@@ -12,12 +12,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 绑定表情
+        // 绑定表情 方法一：
         // SelectTextHelper.putEmojiMap("\\[笑脸\\]", R.drawable.emoji_00)
         // SelectTextHelper.putEmojiMap("\\[瘪嘴\\]", R.drawable.emoji_01)
         // SelectTextHelper.putEmojiMap("\\[色\\]", R.drawable.emoji_02)
         // SelectTextHelper.putEmojiMap("\\[瞪大眼\\]", R.drawable.emoji_03)
         // SelectTextHelper.putEmojiMap("\\[酷\\]", R.drawable.emoji_04)
+        // 绑定表情 方法二：
         val emojiMap: MutableMap<String, Int> = HashMap()
         emojiMap["\\[笑脸\\]"] = R.drawable.emoji_00
         emojiMap["\\[瘪嘴\\]"] = R.drawable.emoji_01
@@ -27,27 +28,26 @@ class MainActivity : AppCompatActivity() {
         SelectTextHelper.putAllEmojiMap(emojiMap)
 
         // todo 一：展示在列表中自由复制、双击查看文本
-        val rv_msg = findViewById<RecyclerView>(R.id.rv_msg)
-        val linearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        rv_msg.layoutManager = linearLayoutManager
+        val rvMsg = findViewById<RecyclerView>(R.id.rv_msg)
+        rvMsg.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         val mList: MutableList<MsgBean> = ArrayList()
         addList(mList)
         val adapter = MsgAdapter(this, mList)
-        rv_msg.adapter = adapter
+        rvMsg.adapter = adapter
 
         // todo 二：展示查看文本
-        // val dialog = SelectTextDialog(this, TEXT)
+        // val dialog = SelectTextDialog(this, TEXT9)
         // dialog.show()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        SelectTextEventBus.default.unregister()
+        SelectTextEventBus.instance.unregister()
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (ev.action == MotionEvent.ACTION_DOWN) {
-            SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPopDelayed"))
+            SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPopDelayed"))
         }
         return super.dispatchTouchEvent(ev)
     }

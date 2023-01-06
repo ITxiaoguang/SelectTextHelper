@@ -103,19 +103,14 @@ class SelectTextHelper(builder: Builder) {
         private const val DEFAULT_SELECTION_LENGTH = 2 // 选2个字节长度 例:表情属于2个字节
         private const val DEFAULT_SHOW_DURATION = 100 // 弹窗100毫秒延迟
 
-        /**
-         * public start
-         */
         @Volatile
         var emojiMap: MutableMap<String, Int> = HashMap()
 
-        @JvmStatic
         @Synchronized
         fun putAllEmojiMap(map: Map<String, Int>?) {
             emojiMap.putAll(map!!)
         }
 
-        @JvmStatic
         @Synchronized
         fun putEmojiMap(emojiKey: String, @DrawableRes drawableRes: Int) {
             emojiMap[emojiKey] = drawableRes
@@ -533,7 +528,7 @@ class SelectTextHelper(builder: Builder) {
         // 是否ImageSpan文本
         if (SelectUtils.isImageSpanText(selectText)) {
             // 是否匹配Image
-            while (!SelectUtils.matchImageSpan(selectText.toString())) {
+            while (!SelectUtils.matchImageSpan(emojiMap, selectText.toString())) {
                 endOffsetCopy++
                 selectText = mSpannable!!.subSequence(startOffset, endOffsetCopy) as Spannable
             }
@@ -873,10 +868,8 @@ class SelectTextHelper(builder: Builder) {
                     val rawX = event.rawX.toInt()
                     val rawY = event.rawY.toInt()
                     // x y不准 x 减去textView距离x轴距离值  y减去字体大小的像素值
-                    update(
-                        rawX + mAdjustX - mWidth - mTextViewMarginStart,
-                        rawY + mAdjustY - mHeight - mTextView.textSize.toInt()
-                    )
+                    update(rawX + mAdjustX - mWidth - mTextViewMarginStart,
+                        rawY + mAdjustY - mHeight - mTextView.textSize.toInt())
                     if (mMagnifierShow) {
                         // android 9 放大镜功能
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

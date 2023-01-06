@@ -13,9 +13,7 @@ import java.util.regex.Pattern
  * hxg 2023.1.5 qq:929842234@qq.com
  */
 class SelectUtils {
-    /**
-     * public start
-     */
+
     companion object {
 
         fun getPreciseOffset(textView: TextView, x: Int, y: Int): Int {
@@ -96,12 +94,9 @@ class SelectUtils {
             return offset > 0 && layout.getLineForOffset(offset) == layout.getLineForOffset(offset - 1) + 1
         }
 
-
-        @JvmStatic
         val displayWidth: Int
             get() = Resources.getSystem().displayMetrics.widthPixels
 
-        @JvmStatic
         val displayHeight: Int
             get() = Resources.getSystem().displayMetrics.heightPixels
 
@@ -116,7 +111,6 @@ class SelectUtils {
          * @param w
          * @param h
          */
-        @JvmStatic
         fun setWidthHeight(v: View, w: Int, h: Int) {
             val params = v.layoutParams
             params.width = w
@@ -132,7 +126,6 @@ class SelectUtils {
         /**
          * 获取通知栏的高度
          */
-        @JvmStatic
         val statusHeight: Int
             get() {
                 if (0 != STATUS_HEIGHT) {
@@ -203,13 +196,14 @@ class SelectUtils {
         /**
          * 匹配Image
          *
+         * @param emojiMap Emoji picture
          * @param content Target content
          */
-        fun matchImageSpan(content: String): Boolean {
-            if (SelectTextHelper.emojiMap.isEmpty()) {
+        fun matchImageSpan(emojiMap: MutableMap<String, Int>, content: String): Boolean {
+            if (emojiMap.isEmpty()) {
                 return false
             }
-            for ((key) in SelectTextHelper.emojiMap) {
+            for ((key) in emojiMap) {
                 val matcher = Pattern.compile(key).matcher(content)
                 if (matcher.find()) {
                     return true

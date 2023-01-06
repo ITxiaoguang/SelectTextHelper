@@ -19,8 +19,7 @@ import com.xiaoguang.selecttext.SelectTextHelper.OnSelectListener
  * hxg 2021/9/14 qq:929842234z
  */
 class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
-    context!!, R.style.SelectTextFragment
-) {
+    context!!, R.style.SelectTextFragment) {
     private var mSelectableTextHelper: SelectTextHelper? = null
     private var selectText: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -104,7 +103,7 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
      * 复制
      */
     private fun copy(selectText: String?) {
-        SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPop"))
+        SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText(selectText, selectText))
         mSelectableTextHelper!!.reset()
@@ -115,7 +114,7 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
      * 全选
      */
     private fun selectAll() {
-        SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPop"))
+        SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
         if (null != mSelectableTextHelper) {
             mSelectableTextHelper!!.selectAll()
         }
@@ -125,7 +124,7 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
      * 转发
      */
     private fun forward(content: String?) {
-        SelectTextEventBus.default.dispatch(SelectTextEvent("dismissAllPop"))
+        SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
         toast("转发")
     }
 

@@ -13,7 +13,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaoguang.selecttext.SelectTextHelper
 import com.xiaoguang.selecttext.SelectTextHelper.OnSelectListener
-import com.xiaoguang.selecttextview.SelectTextEventBus.Companion.default
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 
@@ -191,6 +190,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
     ////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////   演示消息列表选择文本 start   ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////
+
     internal inner class ViewHolderText(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val text_rl_container: RelativeLayout
         val iv_head_left: ImageView
@@ -295,14 +295,14 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                  * 重置回调
                  */
                 override fun onReset() {
-                    default.dispatch(SelectTextEvent("dismissOperatePop"))
+                    SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissOperatePop"))
                 }
 
                 /**
                  * 解除自定义弹窗回调
                  */
                 override fun onDismissCustomPop() {
-                    default.dispatch(SelectTextEvent("dismissOperatePop"))
+                    SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissOperatePop"))
                 }
 
                 /**
@@ -314,8 +314,8 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
             })
 
             // 注册
-            if (!default.isRegistered(this)) {
-                default.register(this, SelectTextEvent::class.java)
+            if (!SelectTextEventBus.instance.isRegistered(this)) {
+                SelectTextEventBus.instance.register(this, SelectTextEvent::class.java)
             }
         }
 
@@ -367,7 +367,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
          * 全选
          */
         private fun selectAll() {
-            default.dispatch(SelectTextEvent("dismissAllPop"))
+            SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
             if (null != mSelectableTextHelper) {
                 mSelectableTextHelper!!.selectAll()
             }
@@ -377,7 +377,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
          * 转发
          */
         private fun forward() {
-            default.dispatch(SelectTextEvent("dismissAllPop"))
+            SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
             toast("转发")
         }
 
@@ -470,7 +470,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
      * 复制
      */
     private fun copy(mSelectableTextHelper: SelectTextHelper?, selectedText: String?) {
-        default.dispatch(SelectTextEvent("dismissAllPop"))
+        SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
         val cm = mContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText(selectedText, selectedText))
         mSelectableTextHelper?.reset()
@@ -481,7 +481,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
         super.onViewRecycled(holder)
         if (holder is ViewHolderText) {
             // 注销
-            default.unregister(holder)
+            SelectTextEventBus.instance.unregister(holder)
         }
     }
 
