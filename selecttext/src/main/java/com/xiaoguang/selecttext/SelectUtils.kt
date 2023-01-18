@@ -99,7 +99,7 @@ class SelectUtils {
          */
         private fun getLastTextLength(layout: Layout, offset: Int): Int {
             var index = 1 // 得到最后一个字符长度
-            val num = 1..10
+            val num = 1..20
             for (i in num) {
                 if (isEndOfLineOffset(layout, offset + i)) {
                     index = i
