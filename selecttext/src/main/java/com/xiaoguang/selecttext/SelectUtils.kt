@@ -78,16 +78,35 @@ class SelectUtils {
             // by 1 to compensate for the change made below. (see previous HACK BLOCK)
             /////////////////////HACK BLOCK///////////////////////////////////////////////////
             if (offset < textView.text.length - 1) {
-                if (isEndOfLineOffset(layout, offset + 1)) {
+                val right = layout.getLineRight(line).toInt()
+                val isEnd = x >= right // 是否选到了最后
+                // FIX 这里的 offset + 1 不一定是对的，需要判断最后一个字符长度，
+                if (isEnd) {
                     val left = layout.getPrimaryHorizontal(offset).toInt()
                     val right = layout.getLineRight(line).toInt()
                     val threshold = (right - left) / 2 // half the width of the last character
                     if (x > right - threshold) {
-                        offset += 1
+                        val index = getLastTextLength(layout, offset) // 得到最后一个字符长度
+                        offset += index // offset + 最后一个字符长度
                     }
                 }
             } //////////////////////////////////////////////////////////////////////////////////
             return offset
+        }
+
+        /**
+         * 得到最后一个字符长度
+         */
+        private fun getLastTextLength(layout: Layout, offset: Int): Int {
+            var index = 1 // 得到最后一个字符长度
+            val num = 1..10
+            for (i in num) {
+                if (isEndOfLineOffset(layout, offset + i)) {
+                    index = i
+                    break
+                }
+            }
+            return index
         }
 
         private fun isEndOfLineOffset(layout: Layout, offset: Int): Boolean {
