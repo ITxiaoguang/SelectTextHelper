@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         var TEXT1 = "www.baidu.com Android 13 将支持在锁屏界面添加QR扫描器"
-        var TEXT2 = "https://github.com/ITxiaoguang\n作者QQ：929842234\n点点star"
+        var TEXT2 = "https://github.com/ITxiaoguang/SelectTextHelper\n作者QQ：929842234\n点点star"
         var TEXT3 = "Emoji表情：\uD83D\uDE04\uD83D\uDE03\uD83D\uDE00\uD83D\uDE0A\uD83D\uDE09\uD83D\uDE0D\uD83D\uDE18\uD83D\uDCAF\uD83D\uDD18\uD83D\uDD17\uD83D\uDD31"
         var TEXT4 = "ImageSpan表情：[笑脸][笑脸][瞪大眼][瞪大眼][色][色][瘪嘴][瘪嘴][酷][酷]"
         var TEXT5 = "Android 13 将拥有更多改进，比如为单个 App 指定语言、蓝牙 LE Audio。"

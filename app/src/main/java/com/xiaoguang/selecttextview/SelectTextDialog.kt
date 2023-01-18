@@ -4,6 +4,8 @@ import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -85,6 +87,9 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
 
             override fun onClickUrl(url: String?) {
                 toast("点击了：  $url")
+
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                context.startActivity(intent)
             }
 
             override fun onSelectAllShowCustomPop() {}

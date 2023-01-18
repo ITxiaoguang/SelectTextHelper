@@ -3,6 +3,8 @@ package com.xiaoguang.selecttextview
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -282,6 +284,9 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                  */
                 override fun onClickUrl(url: String?) {
                     toast("点击了：  $url")
+
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    mContext.startActivity(intent)
                 }
 
                 /**
