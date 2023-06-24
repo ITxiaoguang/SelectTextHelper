@@ -30,7 +30,9 @@
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
         android:paddingBottom="12dp"
-        android:scrollbars="none" />
+        android:scrollbars="none"
+        tools:itemCount="3"
+        tools:listitem="@layout/item_select_text_pop" />
 
     <ImageView
         android:id="@+id/iv_arrow"
