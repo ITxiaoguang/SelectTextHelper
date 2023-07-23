@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaoguang.selecttext.SelectTextHelper
 import com.xiaoguang.selecttext.SelectTextHelper.OnSelectListener
+import com.zzhoujay.richtext.RichText
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 
@@ -73,15 +74,29 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
             is ViewHolderText -> {
                 holder.iv_head_left.visibility = if (msgBean.isReceive) View.VISIBLE else View.GONE
                 holder.iv_head_right.visibility = if (msgBean.isReceive) View.GONE else View.VISIBLE
-                holder.textView.text = msgBean.content
                 if (msgBean.isReceive) {
                     setGravity(holder.textView, Gravity.START)
                 } else {
                     setGravity(holder.textView, Gravity.END)
                 }
 
-                // 演示消息列表选择文本
-                holder.selectText(msgBean)
+                // todo 方法一：富文本  需要转行成富文本形式
+                RichText.initCacheDir(holder.textView.context.applicationContext) // 项目里初始化一次即可
+                RichText.from(msgBean.content)
+                    .autoFix(false) // 是否自动修复宽高，默认true
+                    .autoPlay(true) // gif自动播放
+                    .singleLoad(false) // RecyclerView里设为false 若同时启动了多个RichText，会并发解析，类似于AsyncTask的executeOnExecutor
+                    .done { // 在成功回调处理
+                        // 演示消息列表选择文本
+                        holder.selectText(msgBean)
+                    }
+                    .into(holder.textView)
+
+                // todo 方法二：普通文本
+                // holder.textView.text = msgBean.content
+                // // 演示消息列表选择文本
+                // holder.selectText(msgBean)
+
             }
             is ViewHolderImg -> {
                 holder.iv_head_left.visibility = if (msgBean.isReceive) View.VISIBLE else View.GONE
@@ -217,7 +232,12 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
             mSelectableTextHelper = SelectTextHelper.Builder(textView) // 放你的textView到这里！！
                 .setCursorHandleColor(ContextCompat.getColor(mContext, R.color.colorAccent)) // 游标颜色
                 .setCursorHandleSizeInDp(22f) // 游标大小 单位dp
-                .setSelectedColor(ContextCompat.getColor(mContext, R.color.colorAccentTransparent)) // 选中文本的颜色
+                .setSelectedColor(
+                    ContextCompat.getColor(
+                        mContext,
+                        R.color.colorAccentTransparent
+                    )
+                ) // 选中文本的颜色
                 .setSelectAll(true) // 初次选中是否全选 default true
                 .setScrollShow(true) // 滚动时是否继续显示 default true
                 .setSelectedAllNoPop(true) // 已经全选无弹窗，设置了监听会回调 onSelectAllShowCustomPop 方法
@@ -253,8 +273,10 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                 /**
                  * 点击回调
                  */
-                override fun onClick(v: View?, originalContent: String?) {
-                    clickTextView(originalContent!!)
+                override fun onClick(v: View?, originalContent: CharSequence?) {
+                    // 拿原始文本方式
+                    clickTextView(msgBean.content!!) // 推荐
+                    // clickTextView(originalContent!!) // 不推荐 富文本可能被修改值 导致gif动不了
                 }
 
                 /**
@@ -267,8 +289,8 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
                 /**
                  * 选中文本回调
                  */
-                override fun onTextSelected(content: String?) {
-                    selectedText = content
+                override fun onTextSelected(content: CharSequence?) {
+                    selectedText = content.toString()
                 }
 
                 /**
@@ -331,7 +353,7 @@ class MsgAdapter(private val mContext: Context, private val mList: List<MsgBean>
          *
          * @param content 内容
          */
-        private fun clickTextView(content: String) {
+        private fun clickTextView(content: CharSequence) {
             if (System.currentTimeMillis() - downTime < 500) {
                 downTime = 0
                 val dialog = SelectTextDialog(mContext, content)

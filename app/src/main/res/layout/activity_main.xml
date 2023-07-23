@@ -20,24 +20,54 @@
         android:id="@+id/rv_msg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/textView"
+        android:layout_above="@+id/rl_input"
         android:layout_below="@+id/tv_top" />
 
-    <View
-        android:id="@+id/view"
+    <RelativeLayout
+        android:id="@+id/rl_input"
         android:layout_width="match_parent"
-        android:layout_height="1px"
-        android:layout_above="@+id/textView"
-        android:background="@android:color/darker_gray" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:gravity="center"
-        android:text="全 体 禁 言"
-        android:textColor="#111111"
-        android:textSize="18sp" />
+        android:maxHeight="300dp"
+        android:minHeight="64dp">
+
+        <View
+            android:id="@+id/view"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:background="@android:color/darker_gray" />
+
+        <EditText
+            android:id="@+id/et_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="80dp"
+            android:layout_marginRight="80dp"
+            android:background="@null"
+            android:gravity="start|center_vertical"
+            android:hint="请输入内容（支持富文本）"
+            android:maxHeight="300dp"
+            android:minHeight="64dp"
+            android:padding="8dp"
+            android:textColor="#111111"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_send"
+            android:layout_width="60dp"
+            android:layout_height="32dp"
+            android:layout_alignBottom="@+id/et_input"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/colorAccent"
+            android:gravity="center"
+            android:text="发送"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+
+    </RelativeLayout>
 
 </RelativeLayout>

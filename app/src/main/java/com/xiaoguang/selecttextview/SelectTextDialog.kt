@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Spannable
+import android.text.Spanned
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -14,41 +16,60 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.xiaoguang.selecttext.SelectTextHelper
-import com.xiaoguang.selecttext.SelectTextHelper.OnSelectListener
+import com.zzhoujay.richtext.RichText
 
 /**
  * 选择文字
  * hxg 2021/9/14 qq:929842234z
  */
-class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
-    context!!, R.style.SelectTextFragment) {
-    private var mSelectableTextHelper: SelectTextHelper? = null
-    private var selectText: String? = null
+class SelectTextDialog(context: Context?, private val mText: CharSequence) : Dialog(
+    context!!, R.style.SelectTextFragment
+) {
+    private lateinit var mSelectableTextHelper: SelectTextHelper
+    private var selectText: CharSequence? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setCancelable(true)
         setCanceledOnTouchOutside(true)
-        setContentView(R.layout.fragment_select_text)
+        setContentView(R.layout.dialog_select_text)
 
         // 一定要在setContentView之后调用，否则无效
         window!!.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         findViewById<View>(R.id.rl_selector).setOnClickListener { v: View? ->
-            if (mSelectableTextHelper!!.isPopShowing) {
-                mSelectableTextHelper!!.reset()
+            if (mSelectableTextHelper.isPopShowing) {
+                mSelectableTextHelper.reset()
             } else {
                 dismiss()
             }
         }
         val tv_msg_content = findViewById<TextView>(R.id.tv_msg_content)
-        tv_msg_content.text = mText
-        if (mText.length > 0 && mText.length > 16
-            || mText.contains("\n")
-        ) {
+        if (mText.isNotEmpty() && (mText.length > 16 || mText.contains("\n"))) {
             tv_msg_content.gravity = Gravity.START
         } else {
             tv_msg_content.gravity = Gravity.CENTER
         }
-        mSelectableTextHelper = SelectTextHelper.Builder(tv_msg_content)
+
+        // 不推荐 富文本可能被修改值 导致gif动不了
+        if (mText is Spanned || mText is Spannable) {
+            tv_msg_content.text = mText
+            setSelectText(tv_msg_content)
+        }
+        // 推荐
+        else {
+            RichText.initCacheDir(context.applicationContext)
+            RichText.from(mText.toString())
+                .autoFix(false) // 是否自动修复宽高，默认true
+                .autoPlay(true) // gif自动播放
+                .done { // 在成功回调处理
+                    // 演示消息列表选择文本
+                    setSelectText(tv_msg_content)
+                }
+                .into(tv_msg_content)
+        }
+    }
+
+    private fun setSelectText(textView: TextView) {
+        mSelectableTextHelper = SelectTextHelper.Builder(textView)
             .setCursorHandleColor(ContextCompat.getColor(context, R.color.colorAccent))
             .setCursorHandleSizeInDp(24f)
             .setSelectedColor(ContextCompat.getColor(context, R.color.colorAccentTransparent))
@@ -56,7 +77,7 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
             .addItem(R.drawable.ic_msg_copy, R.string.copy,
                 object : SelectTextHelper.Builder.onSeparateItemClickListener {
                     override fun onClick() {
-                        copy(selectText)
+                        copy(selectText.toString())
                     }
                 })
             .addItem(
@@ -70,14 +91,14 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
             .addItem(R.drawable.ic_msg_forward, R.string.forward,
                 object : SelectTextHelper.Builder.onSeparateItemClickListener {
                     override fun onClick() {
-                        forward(selectText)
+                        forward(selectText.toString())
                     }
                 })
             .build()
-        mSelectableTextHelper!!.setSelectListener(object : OnSelectListener {
-            override fun onClick(v: View?, originalContent: String?) {}
+        mSelectableTextHelper.setSelectListener(object : SelectTextHelper.OnSelectListenerImpl() {
+            override fun onClick(v: View?, originalContent: CharSequence?) {}
             override fun onLongClick(v: View?) {}
-            override fun onTextSelected(content: String?) {
+            override fun onTextSelected(content: CharSequence?) {
                 selectText = content
             }
 
@@ -91,16 +112,11 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 context.startActivity(intent)
             }
-
-            override fun onSelectAllShowCustomPop() {}
-            override fun onReset() {}
-            override fun onDismissCustomPop() {}
-            override fun onScrolling() {}
         })
     }
 
     override fun dismiss() {
-        mSelectableTextHelper!!.reset()
+        mSelectableTextHelper.reset()
         super.dismiss()
     }
 
@@ -111,7 +127,7 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
         SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText(selectText, selectText))
-        mSelectableTextHelper!!.reset()
+        mSelectableTextHelper.reset()
         toast("已复制")
     }
 
@@ -120,9 +136,7 @@ class SelectTextDialog(context: Context?, private val mText: String) : Dialog(
      */
     private fun selectAll() {
         SelectTextEventBus.instance.dispatch(SelectTextEvent("dismissAllPop"))
-        if (null != mSelectableTextHelper) {
-            mSelectableTextHelper!!.selectAll()
-        }
+        mSelectableTextHelper.selectAll()
     }
 
     /**

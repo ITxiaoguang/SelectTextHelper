@@ -10,7 +10,6 @@ import android.text.*
 import android.text.method.LinkMovementMethod
 import android.text.style.BackgroundColorSpan
 import android.text.style.ClickableSpan
-import android.text.style.DynamicDrawableSpan
 import android.text.style.URLSpan
 import android.util.Pair
 import android.view.*
@@ -23,12 +22,11 @@ import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.xiaoguang.selecttext.SelectTextPopAdapter.onClickItemListener
 import java.util.*
-import java.util.regex.Pattern
+
 
 /**
  * Created by hxg on 2021/9/13 929842234@qq.com
@@ -39,7 +37,7 @@ import java.util.regex.Pattern
 class SelectTextHelper(builder: Builder) {
     private var mTextView: TextView
 
-    private var mOriginalContent: String // 原本的文本
+    private var mOriginalContent: CharSequence // 原本的文本
     private var mStartHandle: CursorHandle? = null // 开始操作标
     private var mEndHandle: CursorHandle? = null // 结束操作标
     private var mOperateWindow: OperateWindow? = null // 操作弹窗
@@ -65,7 +63,8 @@ class SelectTextHelper(builder: Builder) {
     private val mPopAnimationStyle: Int // 弹窗动画
     private val mPopArrowImg: Int // 弹窗箭头
     private val itemTextList: List<Pair<Int, String>> // 操作弹窗item文本
-    private var itemListenerList: List<Builder.onSeparateItemClickListener> = LinkedList() // 操作弹窗item监听
+    private var itemListenerList: List<Builder.onSeparateItemClickListener> =
+        LinkedList() // 操作弹窗item监听
     private var mSpan: BackgroundColorSpan? = null
     private var isHideWhenScroll = false
     private var isHide = true
@@ -76,7 +75,7 @@ class SelectTextHelper(builder: Builder) {
 
     init {
         mTextView = builder.mTextView
-        mOriginalContent = mTextView.text.toString()
+        mOriginalContent = mTextView.text
         mContext = mTextView.context
         mSelectedColor = builder.mSelectedColor
         mCursorHandleColor = builder.mCursorHandleColor
@@ -116,38 +115,24 @@ class SelectTextHelper(builder: Builder) {
             emojiMap[emojiKey] = drawableRes
         }
 
-        /**
-         * 文字转化成图片背景
-         *
-         * @param context       Context
-         * @param stringBuilder SpannableStringBuilder text
-         * @param content       Target content
-         */
-        fun replaceText2Emoji(context: Context?, stringBuilder: SpannableStringBuilder, content: String) {
-            if (emojiMap.isEmpty()) {
-                return
-            }
-            for ((key, drawableRes) in emojiMap) {
-                val matcher = Pattern.compile(key).matcher(content)
-                while (matcher.find()) {
-                    val start = matcher.start()
-                    val end = matcher.end()
-                    val drawable = ContextCompat.getDrawable(context!!, drawableRes)
-                    drawable!!.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
-                    val span = SelectImageSpan(
-                        drawable, Color.TRANSPARENT, DynamicDrawableSpan.ALIGN_CENTER
-                    )
-                    stringBuilder.setSpan(span, start, end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE)
-                }
-            }
-        }
+    }
 
+    open class OnSelectListenerImpl : OnSelectListener {
+        override fun onClick(v: View?, originalContent: CharSequence?) = Unit
+        override fun onLongClick(v: View?) = Unit
+        override fun onTextSelected(content: CharSequence?) = Unit
+        override fun onDismiss() = Unit
+        override fun onClickUrl(url: String?) = Unit
+        override fun onSelectAllShowCustomPop() = Unit
+        override fun onReset() = Unit
+        override fun onDismissCustomPop() = Unit
+        override fun onScrolling() = Unit
     }
 
     interface OnSelectListener {
-        fun onClick(v: View?, originalContent: String?) // 点击textView
+        fun onClick(v: View?, originalContent: CharSequence?) // 点击textView
         fun onLongClick(v: View?) // 长按textView
-        fun onTextSelected(content: String?) // 选中文本回调
+        fun onTextSelected(content: CharSequence?) // 选中文本回调
         fun onDismiss() // 解除弹窗回调
         fun onClickUrl(url: String?) // 点击文本里的url回调
         fun onSelectAllShowCustomPop() // 全选显示自定义弹窗回调
@@ -365,16 +350,14 @@ class SelectTextHelper(builder: Builder) {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun init() {
-        // 处理空格 把空格转成不间断空格
+        val spanStr = SpannableStringBuilder(mOriginalContent)
+        // 处理空格 把空格转成不间断空格（\u3000）
         // 为什么处理2个，而不是1个呢？
         // 避免英文单词出现断节
-        val newContent = mOriginalContent
-            // 半角空格(英文符号) 转 不间断空格
-            .replace("\u0020\u0020", "\u00A0\u00A0")
-            // 全角空格(中文符号) 转 不间断空格
-            .replace("\u3000\u3000", "\u00A0\u00A0")
-        val spanStr = SpannableStringBuilder(newContent)
-        replaceText2Emoji(mContext, spanStr, newContent)
+        SelectUtils.replaceContent(spanStr, mOriginalContent, "\u00A0\u00A0", "\u3000\u3000")
+        SelectUtils.replaceContent(spanStr, mOriginalContent, "\u0020\u0020", "\u3000\u3000")
+        // 文字转化成图片背景
+        SelectUtils.replaceText2Emoji(mContext, emojiMap, spanStr, mOriginalContent)
 
         // 去除超链接点击背景色 https://github.com/ITxiaoguang/SelectTextHelper/issues/2
         mTextView.highlightColor = Color.TRANSPARENT
@@ -554,7 +537,7 @@ class SelectTextHelper(builder: Builder) {
         if (null == mOperateWindow) {
             mOperateWindow = OperateWindow(mContext)
         } // 开启已经全选无弹窗
-        if (mSelectedAllNoPop && mSelectionInfo.mSelectionContent == mTextView.text.toString()) {
+        if (mSelectedAllNoPop && mSelectionInfo.mSelectionContent.toString() == mTextView.text.toString()) {
             mOperateWindow!!.dismiss()
             mSelectListener?.onSelectAllShowCustomPop()
         } else {
@@ -638,11 +621,24 @@ class SelectTextHelper(builder: Builder) {
         }
 
         // 前部 透明背景
-        setEmojiBackground(mSpannable!!.subSequence(0, mSelectionInfo.mStart) as Spannable, Color.TRANSPARENT)
+        setEmojiBackground(
+            mSpannable!!.subSequence(0, mSelectionInfo.mStart) as Spannable,
+            Color.TRANSPARENT
+        )
         // 中间 选择背景
-        setEmojiBackground(mSpannable!!.subSequence(mSelectionInfo.mStart, mSelectionInfo.mEnd) as Spannable, mSelectedColor)
+        setEmojiBackground(
+            mSpannable!!.subSequence(
+                mSelectionInfo.mStart,
+                mSelectionInfo.mEnd
+            ) as Spannable, mSelectedColor
+        )
         // 尾部 透明背景
-        setEmojiBackground(mSpannable!!.subSequence(mSelectionInfo.mEnd, mSpannable!!.length) as Spannable, Color.TRANSPARENT)
+        setEmojiBackground(
+            mSpannable!!.subSequence(
+                mSelectionInfo.mEnd,
+                mSpannable!!.length
+            ) as Spannable, Color.TRANSPARENT
+        )
     }
 
     /**
@@ -818,24 +814,28 @@ class SelectTextHelper(builder: Builder) {
         }
 
         override fun onDraw(canvas: Canvas) {
-            canvas.drawCircle((mCircleRadius + mPadding).toFloat(),
+            canvas.drawCircle(
+                (mCircleRadius + mPadding).toFloat(),
                 mCircleRadius.toFloat(),
                 mCircleRadius.toFloat(),
-                mPaint)
+                mPaint
+            )
             if (isLeft) {
                 canvas.drawRect(
                     (mCircleRadius + mPadding).toFloat(),
                     0f,
                     (mCircleRadius * 2 + mPadding).toFloat(),
                     mCircleRadius.toFloat(),
-                    mPaint)
+                    mPaint
+                )
             } else {
                 canvas.drawRect(
                     mPadding.toFloat(),
                     0f,
                     (mCircleRadius + mPadding).toFloat(),
                     mCircleRadius.toFloat(),
-                    mPaint)
+                    mPaint
+                )
             }
         }
 
@@ -868,8 +868,10 @@ class SelectTextHelper(builder: Builder) {
                     val rawX = event.rawX.toInt()
                     val rawY = event.rawY.toInt()
                     // x y不准 x 减去textView距离x轴距离值  y减去字体大小的像素值
-                    update(rawX + mAdjustX - mWidth - mTextViewMarginStart,
-                        rawY + mAdjustY - mHeight - mTextView.textSize.toInt())
+                    update(
+                        rawX + mAdjustX - mWidth - mTextViewMarginStart,
+                        rawY + mAdjustY - mHeight - mTextView.textSize.toInt()
+                    )
                     if (mMagnifierShow) {
                         // android 9 放大镜功能
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -962,8 +964,11 @@ class SelectTextHelper(builder: Builder) {
                 // 把右游标水平坐标定位在减去一个字的线条右侧
                 // 把右游标底部线坐标定位在上一行
                 if (mSelectionInfo.mEnd != 0 && horizontalEnd == 0) {
-                    horizontalEnd = layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1)).toInt()
-                    lineBottomEnd = layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
+                    horizontalEnd =
+                        layout.getLineRight(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
+                            .toInt()
+                    lineBottomEnd =
+                        layout.getLineBottom(layout.getLineForOffset(mSelectionInfo.mEnd - 1))
                 }
                 mPopupWindow.update(horizontalEnd + extraX, lineBottomEnd + extraY, -1, -1)
             }
@@ -994,7 +999,7 @@ class SelectTextHelper(builder: Builder) {
     private inner class SelectionInfo {
         var mStart = 0
         var mEnd = 0
-        var mSelectionContent: String? = null
+        var mSelectionContent: CharSequence? = null
     }
 
     /**
@@ -1002,7 +1007,11 @@ class SelectTextHelper(builder: Builder) {
      */
     private inner class LinkMovementMethodInterceptor : LinkMovementMethod() {
         private var downLinkTime: Long = 0
-        override fun onTouchEvent(widget: TextView, buffer: Spannable, event: MotionEvent): Boolean {
+        override fun onTouchEvent(
+            widget: TextView,
+            buffer: Spannable,
+            event: MotionEvent
+        ): Boolean {
             val action = event.action
             if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
                 var x = event.x.toInt()

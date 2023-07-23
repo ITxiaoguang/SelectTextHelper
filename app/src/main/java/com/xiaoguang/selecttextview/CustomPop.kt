@@ -33,7 +33,7 @@ class CustomPop(
     private var rv_content: RecyclerView? = null
     private var iv_arrow_up: ImageView? = null
     private var iv_arrow: ImageView? = null
-    private val itemTextList: MutableList<Pair<Int, String>>? = LinkedList()
+    private val itemTextList: MutableList<Pair<Int, String>> = LinkedList()
     private val itemListenerList: MutableList<onSeparateItemClickListener> = LinkedList()
     private var listAdapter: SelectTextPopAdapter? = null
     private var popupWindow: PopupWindow? = null
@@ -59,7 +59,7 @@ class CustomPop(
         itemText: String,
         listener: onSeparateItemClickListener
     ) {
-        itemTextList!!.add(Pair(drawableId, itemText))
+        itemTextList.add(Pair(drawableId, itemText))
         itemListenerList.add(listener)
     }
 
@@ -158,7 +158,7 @@ class CustomPop(
         if (rv_content != null) {
             rv_content!!.adapter = listAdapter
         }
-        val size = itemTextList!!.size
+        val size = itemTextList.size
         val deviceWidth = SelectUtils.Companion.displayWidth
         val deviceHeight = SelectUtils.Companion.displayHeight
         val statusHeight = SelectUtils.Companion.statusHeight

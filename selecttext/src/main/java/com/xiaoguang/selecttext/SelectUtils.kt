@@ -1,11 +1,20 @@
 package com.xiaoguang.selecttext
 
+import android.content.Context
 import android.content.res.Resources
+import android.graphics.Color
+import android.graphics.drawable.AnimatedImageDrawable
+import android.graphics.drawable.AnimatedVectorDrawable
+import android.graphics.drawable.AnimationDrawable
+import android.os.Build
 import android.text.Layout
 import android.text.Spannable
+import android.text.SpannableStringBuilder
 import android.text.TextUtils
+import android.text.style.DynamicDrawableSpan
 import android.view.View
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import java.util.regex.Pattern
 
 /**
@@ -15,6 +24,74 @@ import java.util.regex.Pattern
 class SelectUtils {
 
     companion object {
+
+        /**
+         * 替换内容
+         *
+         * @param stringBuilder       SpannableStringBuilder text
+         * @param mOriginalContent CharSequence text
+         * @param targetText       Target Text
+         * @param replaceText       Replace Text
+         */
+        fun replaceContent(
+            stringBuilder: SpannableStringBuilder,
+            mOriginalContent: CharSequence,
+            targetText: String,
+            replaceText: String,
+        ) {
+            val startIndex = mOriginalContent.toString().indexOf(targetText)
+            if (-1 != startIndex) {
+                val endIndex = startIndex + targetText.length
+                stringBuilder.replace(startIndex, endIndex, replaceText)
+            }
+        }
+
+        /**
+         * 文字转化成图片背景
+         *
+         * @param context       Context
+         * @param stringBuilder SpannableStringBuilder text
+         * @param content       Target content
+         */
+        fun replaceText2Emoji(
+            context: Context?,
+            emojiMap: MutableMap<String, Int>,
+            stringBuilder: SpannableStringBuilder,
+            content: CharSequence
+        ) {
+            if (emojiMap.isEmpty()) {
+                return
+            }
+            for ((key, drawableRes) in emojiMap) {
+                val matcher = Pattern.compile(key).matcher(content)
+                while (matcher.find()) {
+                    val start = matcher.start()
+                    val end = matcher.end()
+                    val drawable = ContextCompat.getDrawable(context!!, drawableRes)
+                    // 动画图（加载多张 Drawable 图片资源组合而成的动画）
+                    if (drawable is AnimationDrawable) {
+                        drawable.start() // 开始播放动画
+                    }
+                    // 动态图
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        if (drawable is AnimatedImageDrawable) {
+                            drawable.start()
+                        }
+                    }
+                    // 动态矢量图
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        if (drawable is AnimatedVectorDrawable) {
+                            drawable.start()
+                        }
+                    }
+                    drawable!!.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
+                    val span = SelectImageSpan(
+                        drawable, Color.TRANSPARENT, DynamicDrawableSpan.ALIGN_CENTER
+                    )
+                    stringBuilder.setSpan(span, start, end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE)
+                }
+            }
+        }
 
         fun getPreciseOffset(textView: TextView, x: Int, y: Int): Int {
             val layout = textView.layout
