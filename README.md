@@ -63,7 +63,8 @@ allprojects {
 
 #### 2.在Module目录下的`build.gradle`中添加依赖
 
-[![](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1ba9ba25273548878d044c665c51b122~tplv-k3u1fbpfcp-zoom-1.image)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
+[![](https://jitpack.io/v/ITxiaoguang/SelectTextHelper.svg)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
+
 
 ```gradle
 dependencies {
