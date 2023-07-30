@@ -249,8 +249,7 @@ class SelectUtils {
                     val field = clazz.getDeclaredField(fieldName!!)
                     field.isAccessible = true
                     return field[obj]
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                } catch (ignore: Exception) {
                 }
                 clazz = clazz.superclass
             }
@@ -283,8 +282,7 @@ class SelectUtils {
                         }
                     }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (ignore: Exception) {
             }
             return false
         }
