@@ -5,6 +5,9 @@
 `SelectTextHelper`打造一个全网最逼近微信聊天消息自由复制，双击查看文本内容框架。 支持图片和富文本选中，汇聚底层`TextView`框架、原理并加以整理得出的一个实用的`Helper`。
 仅用几个类实现便实现如此强大的功能，用法也超级简单，侵入性极低。
 
+项目持续维护中...
+您的宝贵意见和建议是技术前进的方向
+
 [![](https://jitpack.io/v/ITxiaoguang/SelectTextHelper.svg)](https://jitpack.io/#ITxiaoguang/SelectTextHelper)
 
 
