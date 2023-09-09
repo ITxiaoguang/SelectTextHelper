@@ -77,7 +77,7 @@ dependencies {
 
 ### 简单用例
 
-#### 1.导入代
+#### 1.导入代码
 
 把该项目里的`selecttext Module`放入你的项目里面 或者 按照`Gradle`添加的步骤导入依赖。
 
