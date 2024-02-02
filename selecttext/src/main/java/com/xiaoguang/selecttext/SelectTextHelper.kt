@@ -351,7 +351,7 @@ class SelectTextHelper(builder: Builder) {
     @SuppressLint("ClickableViewAccessibility")
     private fun init() {
         val spanStr = SpannableStringBuilder(mOriginalContent)
-        // 处理空格 把空格转成不间断空格（\u3000）
+        // 处理空格 把不间断空格(\u00A0)/半角空格(\u0020)转成全角空格(\u3000)
         // 为什么处理2个，而不是1个呢？
         // 避免英文单词出现断节
         SelectUtils.replaceContent(spanStr, mOriginalContent, "\u00A0\u00A0", "\u3000\u3000")
